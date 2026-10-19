@@ -1263,6 +1263,18 @@ function pdfLecturas(paginas) {
     { nombre: 'Por columnas, más separadas', matriz: pdfAMatriz(paginas, 1.4) },
     { nombre: 'Por renglón (precio al final de cada línea)', matriz: pdfPorRenglon(paginas) }
   ].filter(l => l.matriz && l.matriz.length > 1);
+  // listas con productos en 2 (o 3) bloques lado a lado en la misma hoja: se apilan para leer todos
+  const apiladas = [];
+  cand.forEach(l => {
+    const nc = l.matriz.reduce((m, f) => Math.max(m, f.length), 0);
+    [2, 3].forEach(w => {
+      if (nc < w * 2 || nc % w) return;
+      const out = [];
+      for (let b = 0; b < nc / w; b++) l.matriz.forEach(f => { const bl = []; for (let j = 0; j < w; j++) bl.push(f[b * w + j] == null ? '' : f[b * w + j]); if (bl.some(c => String(c).trim() !== '')) out.push(bl); });
+      apiladas.push({ nombre: 'Bloques lado a lado, uno debajo del otro (' + w + ' col.)' + (l.nombre.indexOf('separadas') >= 0 ? ' · separadas' : ''), matriz: out });
+    });
+  });
+  cand.push(...apiladas.filter(l => l.matriz.length > 1));
   const vistos = new Set();
   return cand.filter(l => { const k = JSON.stringify(l.matriz.slice(0, 30)); if (vistos.has(k)) return false; vistos.add(k); return true; })
     .map(l => ({ nombre: l.nombre, matriz: l.matriz.map(f => f.map(c => c == null ? '' : c)) }));
@@ -1317,8 +1329,10 @@ async function prFile(f) {
       if (!PR.lects.length) throw new Error('No se pudo armar una tabla con ese PDF. Probá con la lista en Excel o CSV.');
       // se elige la lectura que más productos con precio saca (o la que usaste la última vez con este proveedor)
       const mem = prMemGet(); let mejor = 0, mejorN = -1;
-      PR.lects.forEach((l, i) => { PR.raw = l.matriz; prAuto(true); const n = PR.rows.length; if (n > mejorN) { mejorN = n; mejor = i; } });
-      const iMem = mem && mem.lect ? PR.lects.findIndex(l => l.nombre === mem.lect) : -1;
+      const ns = [];
+      PR.lects.forEach((l, i) => { PR.raw = l.matriz; prAuto(true); const n = PR.rows.length; ns.push(n); if (n > mejorN) { mejorN = n; mejor = i; } });
+      let iMem = mem && mem.lect ? PR.lects.findIndex(l => l.nombre === mem.lect) : -1;
+      if (iMem >= 0 && ns[iMem] < mejorN * 0.95) iMem = -1; // lo recordado saca bastantes menos productos: se descarta
       PR.lect = iMem >= 0 ? iMem : mejor; PR.raw = PR.lects[PR.lect].matriz; prAuto(); prMemAplicar(mem);
     } else if (ext === 'csv' || ext === 'txt') {
       PR.fmt = 'csv'; const buf = await f.arrayBuffer(); let t = new TextDecoder('utf-8').decode(buf); if (t.indexOf('�') >= 0) t = new TextDecoder('windows-1252').decode(buf);
