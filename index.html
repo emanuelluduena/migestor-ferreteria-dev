@@ -948,6 +948,241 @@ function parseCSV(text) {
   if (cur !== '' || row.length) { row.push(cur); out.push(row); }
   return out;
 }
+/* ---- Macheo de listas de proveedor: mismo motor que Mi Gestor (código → nombre idéntico → nombre parecido) ---- */
+const LPC = (function () {
+  'use strict';
+  function redondear(n, dec) {
+    const f = Math.pow(10, dec);
+    return Math.round((n + Number.EPSILON) * f) / f;
+  }
+  function sinAcentos(s) {
+    return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  }
+  function celdaATexto(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(v);
+    return String(v).trim();
+  }
+  const UNIDADES = {
+    gr: 'g', grs: 'g', gramo: 'g', gramos: 'g', kgs: 'kg', kilo: 'kg', kilos: 'kg', kg: 'kg',
+    lt: 'l', lts: 'l', litro: 'l', litros: 'l', cc: 'ml', unidades: 'u', unidad: 'u', un: 'u', unid: 'u', und: 'u',
+    mts: 'm', mt: 'm', metro: 'm', metros: 'm', pulg: 'in', pulgada: 'in', pulgadas: 'in', rollos: 'rollo'
+  };
+  const RELLENO = new Set(['x', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'para', 'en', 'por', 'a']);
+
+  function tokenizar(s) {
+    let t = sinAcentos(s);
+    t = t.replace(/(\d)[.,](\d)/g, '$1#$2');            // 1,5 y 1.5 → 1#5
+    t = t.replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
+    t = t.replace(/[^a-z0-9#]+/g, ' ').trim();
+    if (!t) return [];
+    const out = [];
+    t.split(' ').forEach(function (tok) {
+      if (!tok) return;
+      if (UNIDADES[tok]) tok = UNIDADES[tok];
+      if (RELLENO.has(tok)) return;
+      out.push(tok);
+    });
+    return out;
+  }
+
+  function esNumero(tok) { return /^\d+(#\d+)?$/.test(tok); }
+
+  function normalizarTexto(s) { return tokenizar(s).join(' '); }
+
+  /** Código para comparar: sin espacios, minúsculas, sin ceros a la izquierda ni ".0" que mete Excel. */
+  function normCodigo(c) {
+    let s = celdaATexto(c).toLowerCase().replace(/\s+/g, '');
+    s = s.replace(/^(\d+)\.0+$/, '$1');
+    if (/^\d+$/.test(s)) s = s.replace(/^0+(?=\d)/, '');
+    return s;
+  }
+
+  function bigramas(s) {
+    const m = new Map();
+    for (let i = 0; i < s.length - 1; i++) {
+      const b = s.substr(i, 2);
+      m.set(b, (m.get(b) || 0) + 1);
+    }
+    return m;
+  }
+
+  function diceBigramas(a, b) {
+    if (a === b) return a.length ? 1 : 0;
+    if (a.length < 2 || b.length < 2) return 0;
+    const ma = bigramas(a), mb = bigramas(b);
+    let inter = 0;
+    ma.forEach(function (n, k) { if (mb.has(k)) inter += Math.min(n, mb.get(k)); });
+    return (2 * inter) / ((a.length - 1) + (b.length - 1));
+  }
+
+  function conjunto(arr) { return Array.from(new Set(arr)); }
+
+  function puntajeTokens(sa, sb) {
+    if (!sa.length || !sb.length) return 0;
+    const setB = new Set(sb);
+    let inter = 0;
+    sa.forEach(function (t) { if (setB.has(t)) inter++; });
+    let score = (2 * inter) / (sa.length + sb.length);
+    score = penalizarNumeros(score, sa, sb);
+    return score;
+  }
+
+  // Si los dos nombres traen cantidades/tamaños y no coinciden ("500 g" vs "1 kg"), no son el mismo producto.
+  function penalizarNumeros(score, sa, sb) {
+    const na = sa.filter(esNumero), nb = sb.filter(esNumero);
+    if (na.length && nb.length) {
+      const setNb = new Set(nb);
+      const iguales = na.length === nb.length && na.every(function (x) { return setNb.has(x); });
+      if (!iguales) return score * 0.5;
+    } else if (na.length !== nb.length) {
+      return score * 0.9;
+    }
+    return score;
+  }
+
+  /** Similitud entre dos descripciones, de 0 a 1. */
+  function similitud(a, b) {
+    const ta = tokenizar(a), tb = tokenizar(b);
+    if (!ta.length || !tb.length) return 0;
+    const sa = conjunto(ta), sb = conjunto(tb);
+    const tok = puntajeTokens(sa, sb);
+    const big = penalizarNumeros(diceBigramas(ta.join(''), tb.join('')) * 0.95, sa, sb);
+    return Math.max(tok, big);
+  }
+
+  // ───────────────────────── Índice de artículos ─────────────────────────
+
+  function indexarArticulos(articulos) {
+    const items = [];
+    const porCodigo = new Map();
+    const inv = new Map(); // token → [posiciones]
+    articulos.forEach(function (a) {
+      const toks = tokenizar(a.nombre);
+      const it = { art: a, codigo: a.codigo, nCodigo: normCodigo(a.codigo), toks: conjunto(toks), joined: toks.join('') };
+      const pos = items.length;
+      items.push(it);
+      if (it.nCodigo && !porCodigo.has(it.nCodigo)) porCodigo.set(it.nCodigo, it);
+      it.toks.forEach(function (t) {
+        if (!inv.has(t)) inv.set(t, []);
+        inv.get(t).push(pos);
+      });
+    });
+    return { items, porCodigo, inv };
+  }
+
+  /** Mejores candidatos por nombre para una descripción. Devuelve [{codigo, nombre, score}] ordenado. */
+  function candidatosPorNombre(descripcion, idx, max) {
+    max = max || 3;
+    const tq = tokenizar(descripcion);
+    if (!tq.length) return [];
+    const sq = conjunto(tq);
+    const posibles = new Set();
+    sq.forEach(function (t) {
+      const lista = idx.inv.get(t);
+      if (lista && lista.length <= 2000) lista.forEach(function (p) { posibles.add(p); });
+    });
+    const puntuados = [];
+    posibles.forEach(function (p) {
+      const it = idx.items[p];
+      puntuados.push({ it, score: puntajeTokens(sq, it.toks) });
+    });
+    puntuados.sort(function (x, y) { return y.score - x.score; });
+    const joinedQ = tq.join('');
+    return puntuados.slice(0, 8).map(function (x) {
+      const big = penalizarNumeros(diceBigramas(joinedQ, x.it.joined) * 0.95, sq, x.it.toks);
+      return { codigo: x.it.codigo, nombre: x.it.art.nombre, score: redondear(Math.max(x.score, big), 4) };
+    }).sort(function (x, y) { return y.score - x.score; }).slice(0, max);
+  }
+
+  // ───────────────────────── Matcheo ─────────────────────────
+
+  /**
+   * Cruza cada fila de la lista con los artículos del cliente.
+   * Estados devueltos:
+   *   'relacion' → ya estaba vinculado de una carga anterior (automático)
+   *   'codigo'   → el código del proveedor coincide con el del artículo (automático)
+   *   'nombre'   → el nombre coincide exacto (automático)
+   *   'dudoso'   → hay un candidato parecido, el cliente tiene que confirmar
+   *   'nuevo'    → no se encontró nada
+   * Cada resultado trae `aceptado` (true si ya se toma por bueno) y `candidatos` (sugerencias).
+   *
+   * relaciones: Map(normCodigo del proveedor → codigo del artículo)
+   * opts: { umbralDudoso=0.6, umbralCodigoNombre=0.25 }
+   */
+  function matchear(filas, idx, relaciones, opts) {
+    opts = opts || {};
+    const umbralDudoso = opts.umbralDudoso != null ? opts.umbralDudoso : 0.6;
+    const umbralCodNombre = opts.umbralCodigoNombre != null ? opts.umbralCodigoNombre : 0.25;
+    relaciones = relaciones || new Map();
+    const res = filas.map(function (f) {
+      const r = { fila: f.fila, codigo: f.codigo, descripcion: f.descripcion, costo: f.costo,
+        estado: 'nuevo', articuloCodigo: null, aceptado: false, score: 0, candidatos: [], motivo: '' };
+      const nProv = normCodigo(f.codigo);
+
+      // 1) Relación guardada
+      if (nProv && relaciones.has(nProv)) {
+        const it = idx.porCodigo.get(normCodigo(relaciones.get(nProv)));
+        if (it) { r.estado = 'relacion'; r.articuloCodigo = it.codigo; r.aceptado = true; r.score = 1; return r; }
+        r.motivo = 'El artículo vinculado antes ya no existe';
+      }
+
+      // 2) Mismo código
+      if (nProv && idx.porCodigo.has(nProv)) {
+        const it = idx.porCodigo.get(nProv);
+        const sc = f.descripcion ? similitud(f.descripcion, it.art.nombre) : 1;
+        r.articuloCodigo = it.codigo; r.score = sc;
+        if (sc >= umbralCodNombre) { r.estado = 'codigo'; r.aceptado = true; return r; }
+        // El código coincide pero el nombre no tiene nada que ver: puede ser casualidad.
+        r.estado = 'dudoso'; r.motivo = 'El código coincide pero el nombre es muy distinto';
+        r.candidatos = [{ codigo: it.codigo, nombre: it.art.nombre, score: redondear(sc, 4) }];
+        return r;
+      }
+
+      // 3) Nombre parecido
+      if (f.descripcion) {
+        const cands = candidatosPorNombre(f.descripcion, idx, 3);
+        r.candidatos = cands;
+        if (cands.length) {
+          const mejor = cands[0];
+          const empate = cands.length > 1 && Math.abs(cands[1].score - mejor.score) < 0.001;
+          r.score = mejor.score;
+          if (mejor.score >= 0.999 && !empate) {
+            r.estado = 'nombre'; r.articuloCodigo = mejor.codigo; r.aceptado = true; return r;
+          }
+          if (mejor.score >= umbralDudoso) {
+            r.estado = 'dudoso'; r.articuloCodigo = mejor.codigo;
+            if (empate) r.motivo = 'Hay dos artículos igual de parecidos';
+            return r;
+          }
+        }
+      }
+      return r; // 'nuevo'
+    });
+
+    // Dos renglones de la lista apuntando al mismo artículo: que el cliente decida.
+    const usos = new Map();
+    res.forEach(function (r) {
+      if (r.aceptado && r.articuloCodigo) {
+        const k = normCodigo(r.articuloCodigo);
+        usos.set(k, (usos.get(k) || 0) + 1);
+      }
+    });
+    res.forEach(function (r) {
+      if (r.aceptado && usos.get(normCodigo(r.articuloCodigo)) > 1) {
+        r.aceptado = false;
+        r.estado = 'dudoso';
+        r.motivo = 'Otro renglón de la lista apunta al mismo artículo';
+      }
+    });
+    return res;
+  }
+
+  // ───────────────────────── Precios ─────────────────────────
+
+  return { matchear, indexarArticulos, candidatosPorNombre, normCodigo, normalizarTexto, similitud };
+})();
+
 /* ---- PDF: se reconstruye una TABLA a partir de la posición del texto (mismo método que Mi Gestor) ---- */
 function pdfRenglones(paginas, tolF) {
   const out = [];
@@ -1149,40 +1384,99 @@ function prMapUI() {
 async function prMatch() {
   const box = $('#l-prev'); if (!box) return;
   if (!PR.prov) { box.innerHTML = ''; return; }
-  if (!PR.rows.length) { box.innerHTML = '<div class="alert a-warn" style="margin-top:12px">No se pudo leer ningún precio con esa configuración. Probá cambiando las columnas o la forma de leer el precio.</div>'; return; }
+  if (!PR.rows.length) { box.innerHTML = '<div class="alert a-warn" style="margin-top:12px">No se pudo leer ningún precio con esa configuración. Elegí otra columna o cambiá la forma de leer el archivo.</div>'; return; }
   box.innerHTML = '<div class="vacio">Comparando con tu catálogo…</div>';
-  const clave = PR.fname + '|' + PR.prov + '|' + PR.desc + '|' + PR.iva + '|' + PR.rows.length; PR._clave = clave;
+  const clave = PR.fname + '|' + PR.prov + '|' + PR.rows.length + '|' + PR.cc + '|' + PR.dc + '|' + PR.pc; PR._clave = clave;
   try {
-    const [links, arts] = await Promise.all([fetchAll('articulo_proveedor?select=codigo_proveedor,articulo_id&proveedor_id=eq.' + PR.prov), fetchAll('articulos?select=id,codigo,descripcion,costo,precio1,iva_pct&activo=eq.true')]);
-    const byId = {}, byCode = {}, byLink = {}, byDesc = {}; arts.forEach(a => { byId[a.id] = a; byCode[normCode(a.codigo)] = a; byDesc[normDesc(a.descripcion)] = a; }); links.forEach(l => { if (byId[l.articulo_id]) byLink[normCode(l.codigo_proveedor)] = byId[l.articulo_id]; });
+    if (!PR._datos || PR._datos.prov !== PR.prov || Date.now() - PR._datos.t > 120000) {
+      const [links, arts] = await Promise.all([fetchAll('articulo_proveedor?select=codigo_proveedor,articulo_id&proveedor_id=eq.' + PR.prov), fetchAll('articulos?select=id,codigo,descripcion,costo,precio1,iva_pct&activo=eq.true')]);
+      PR._datos = { prov: PR.prov, t: Date.now(), links, arts };
+    }
     if (PR._clave !== clave || !$('#l-prev')) return;
-    const seen = {};
-    PR.rows.forEach(r => {
-      const nc = normCode(r.codigo); const a = (nc && (byLink[nc] || byCode[nc])) || byDesc[normDesc(r.descripcion)] || null; r.art = a;
-      const iva = a ? +a.iva_pct : 21; r.nuevo = r2(r.precio * (1 - PR.desc / 100) / (PR.iva ? 1 + iva / 100 : 1));
-      if (a) { r.var = a.costo > 0 ? (r.nuevo / a.costo - 1) * 100 : null; r.estado = Math.abs(r.nuevo - a.costo) < 0.005 ? 'igual' : (r.nuevo > a.costo ? 'sube' : 'baja'); r.dup = !!seen[a.id]; seen[a.id] = true; } else r.estado = 'nuevo';
-      if (r.sel === undefined || r._k !== PR.fname + PR.desc + PR.iva) { r.sel = r.estado === 'sube' || r.estado === 'baja'; r._k = PR.fname + PR.desc + PR.iva; }
-    });
-    prPrev();
+    const { links, arts } = PR._datos;
+    const byId = {}; arts.forEach(a => { byId[a.id] = a; });
+    const rel = new Map(); links.forEach(l => { const a = byId[l.articulo_id]; if (a && l.codigo_proveedor) rel.set(LPC.normCodigo(l.codigo_proveedor), a.codigo); });
+    PR.byId = byId; PR.arts = arts;
+    PR.idx = LPC.indexarArticulos(arts.map(a => ({ codigo: a.codigo, nombre: a.descripcion, costo: a.costo, id: a.id })));
+    const res = LPC.matchear(PR.rows.map((r, i) => ({ fila: i + 1, codigo: r.codigo, descripcion: r.descripcion, costo: r.precio })), PR.idx, rel);
+    PR.rows.forEach((r, i) => { r.res = res[i]; r.eraDudoso = res[i].estado === 'dudoso'; r.sel = undefined; });
+    prAplicarRes(true); prPrev();
   } catch (e) { if ($('#l-prev')) $('#l-prev').innerHTML = '<div class="alert a-bad" style="margin-top:12px">' + esc(e.message) + '</div>'; }
 }
-function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (!r.art && r.codigo) c.crear++; }); return c; }
+/** Calcula, para una fila ya macheada, el artículo, el costo nuevo y si sube/baja/igual. */
+function prRowCalc(r, init) {
+  const res = r.res; r.art = null; r.dup = false;
+  if (res.aceptado && res.articuloCodigo) { const it = PR.idx.porCodigo.get(LPC.normCodigo(res.articuloCodigo)); r.art = it ? PR.byId[it.art.id] : null; }
+  const iva = r.art ? +r.art.iva_pct : 21;
+  r.nuevo = r2(r.precio * (1 - PR.desc / 100) / (PR.iva ? 1 + iva / 100 : 1));
+  if (r.art) { r.var = r.art.costo > 0 ? (r.nuevo / r.art.costo - 1) * 100 : null; r.estado = Math.abs(r.nuevo - r.art.costo) < 0.005 ? 'igual' : (r.nuevo > r.art.costo ? 'sube' : 'baja'); }
+  else { r.var = null; r.estado = res.estado === 'ignorado' ? 'ignorado' : res.estado === 'dudoso' ? 'dudoso' : 'nuevo'; }
+  if (init || r.sel === undefined) r.sel = r.estado === 'sube' || r.estado === 'baja';
+}
+function prAplicarRes(init) {
+  PR.rows.forEach(r => prRowCalc(r, init));
+  const seen = {}; PR.rows.forEach(r => { if (r.art) { if (seen[r.art.id]) r.dup = true; seen[r.art.id] = true; } });
+}
+function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, dudoso: 0, ignorado: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (r.estado === 'nuevo' && r.codigo) c.crear++; }); return c; }
+/* ---- vincular a mano (los "dudosos" y los "nuevos" que en realidad ya tenés) ---- */
+function prVincular(i, cod) {
+  const r = PR.rows[i]; if (!cod) return toast('Elegí un artículo o ignorá la fila', 'err');
+  r.res.articuloCodigo = cod; r.res.aceptado = true; r.res.estado = 'manual'; prAplicarRes(); prPrev();
+}
+function prDudElegir(i, cod) { PR.rows[i].res.articuloCodigo = cod || null; }
+function prDudOk(i) { prVincular(i, PR.rows[i].res.articuloCodigo); }
+function prDudNo(i) { const x = PR.rows[i].res; x.estado = 'ignorado'; x.aceptado = false; x.articuloCodigo = null; prAplicarRes(); prPrev(); }
+function prDudRe(i) { const x = PR.rows[i].res; x.aceptado = false; x.estado = 'dudoso'; prAplicarRes(); prPrev(); }
+function prDudSug() {
+  let n = 0; PR.rows.forEach(r => { const x = r.res; if (r.eraDudoso && x.estado === 'dudoso' && x.articuloCodigo && x.score >= 0.75) { x.aceptado = true; x.estado = 'manual'; n++; } });
+  prAplicarRes(); prPrev(); toast(n ? n + ' vinculados' : 'No había sugeridos con 75% o más', n ? '' : 'err');
+}
+function prVincSug(i) { const c = PR.rows[i].res.candidatos[0]; if (c) prVincular(i, c.codigo); }
+function prBuscar(i) {
+  const r = PR.rows[i];
+  modal('<h2>Vincular con un artículo tuyo</h2><div class="hint" style="margin-bottom:8px">En la lista: <b>' + esc(r.codigo || '—') + '</b> · ' + esc(r.descripcion) + '</div><input id="bq" placeholder="Buscá por código o descripción…" value="' + esc(r.descripcion) + '"><div id="bres" class="twrap" style="margin-top:10px;max-height:46vh;overflow-y:auto"></div>', true);
+  const run = () => {
+    const q = $('#bq').value.trim(); const nq = LPC.normalizarTexto(q), nc = LPC.normCodigo(q); const vistos = new Set(); const out = [];
+    LPC.candidatosPorNombre(q, PR.idx, 8).forEach(c => { vistos.add(c.codigo); out.push({ codigo: c.codigo, nombre: c.nombre, score: c.score }); });
+    if (nc) PR.arts.forEach(a => { if (out.length < 14 && !vistos.has(a.codigo) && (LPC.normCodigo(a.codigo).includes(nc) || (nq && LPC.normalizarTexto(a.descripcion).includes(nq)))) { vistos.add(a.codigo); out.push({ codigo: a.codigo, nombre: a.descripcion, score: 0 }); } });
+    $('#bres').innerHTML = out.length ? '<table><tbody>' + out.map(c => '<tr><td><b>' + esc(c.codigo) + '</b></td><td>' + esc(c.nombre) + '</td><td class="n">' + (c.score ? Math.round(c.score * 100) + '%' : '') + '</td><td><button class="btn o sm" onclick="closeModal();prVincular(' + i + ',\'' + esc(c.codigo).replace(/'/g, "\\'") + '\')">Vincular</button></td></tr>').join('') + '</tbody></table>' : '<div class="vacio">No encontré nada. Probá con otra palabra.</div>';
+  };
+  $('#bq').oninput = run; run();
+}
+function prDudHtml() {
+  const duds = PR.rows.map((r, i) => ({ r, i })).filter(x => x.r.eraDudoso);
+  if (!duds.length) return '';
+  const pend = duds.filter(x => x.r.res.estado === 'dudoso').length;
+  const fila = ({ r, i }) => {
+    const x = r.res; const cands = x.candidatos || [];
+    let opts = '<option value="">— no vincular —</option>' + cands.map(c => '<option value="' + esc(c.codigo) + '"' + (c.codigo === x.articuloCodigo ? ' selected' : '') + '>' + esc(c.codigo + ' — ' + c.nombre) + ' (' + Math.round(c.score * 100) + '%)</option>').join('');
+    if (x.articuloCodigo && !cands.some(c => c.codigo === x.articuloCodigo)) { const it = PR.idx.porCodigo.get(LPC.normCodigo(x.articuloCodigo)); opts += '<option value="' + esc(x.articuloCodigo) + '" selected>' + esc(x.articuloCodigo + ' — ' + (it ? it.art.nombre : '')) + '</option>'; }
+    const cerrado = x.aceptado || x.estado === 'ignorado';
+    const accion = x.aceptado ? '<span style="color:#15803d;font-weight:600">✔ Vinculado</span> <button class="btn l sm" onclick="prDudRe(' + i + ')">Cambiar</button>' : x.estado === 'ignorado' ? '<span style="color:#888">Ignorado</span> <button class="btn l sm" onclick="prDudRe(' + i + ')">Cambiar</button>' : '<button class="btn o sm" onclick="prDudOk(' + i + ')">✔ Vincular</button> <button class="btn l sm" onclick="prDudNo(' + i + ')">Ignorar</button>';
+    return '<tr><td><b>' + esc(r.codigo || '—') + '</b><br><small>' + esc(r.descripcion) + '</small></td><td class="n">' + money(r.nuevo) + '</td><td><select ' + (cerrado ? 'disabled ' : '') + 'style="max-width:290px" onchange="prDudElegir(' + i + ',this.value)">' + opts + '</select>' + (cerrado ? '' : ' <button class="btn l sm" onclick="prBuscar(' + i + ')">🔍 Otro</button>') + '</td><td><small style="color:#888">' + esc(x.motivo || (x.score ? 'Parecido: ' + Math.round(x.score * 100) + '%' : '')) + '</small></td><td style="white-space:nowrap">' + accion + '</td></tr>';
+  };
+  return '<div class="panel" style="margin-top:12px;background:#fffaf0"><div class="stit" style="font-weight:700">Para confirmar (' + pend + (pend !== duds.length ? ' de ' + duds.length : '') + ')</div><div class="hint" style="margin-bottom:8px">Estos artículos de la lista se parecen a alguno de los tuyos, pero no estoy seguro. Elegí a cuál corresponde y tocá <b>Vincular</b>. Queda guardado para este proveedor, así la próxima lista se actualiza sola.</div>' +
+    '<div class="brow"><button class="btn l sm" onclick="prDudSug()">✔ Vincular los sugeridos con 75% o más de parecido</button></div>' +
+    '<div class="twrap" style="max-height:44vh;overflow-y:auto"><table><thead><tr><th>Lista del proveedor</th><th class="n">Costo</th><th>Tu artículo</th><th>Motivo</th><th></th></tr></thead><tbody>' + duds.slice(0, 150).map(fila).join('') + '</tbody></table></div>' + (duds.length > 150 ? '<div class="hint">Mostrando 150 de ' + duds.length + '. Vinculá o ignorá estos y aparecen los siguientes.</div>' : '') + '</div>';
+}
 function prPrev() {
   const c = prCounts(); const f = PR.filtro;
   const list = PR.rows.map((r, i) => ({ r, i })).filter(x => f === 'todos' || (f === 'cambian' && (x.r.estado === 'sube' || x.r.estado === 'baja')) || f === x.r.estado);
   const mostrar = list.slice(0, 400);
-  $('#l-prev').innerHTML = '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">4. Revisá los cambios antes de aplicar</div>' +
-    '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div><div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
-    (PR.rows.some(r => r.dup) ? '<div class="alert a-warn">Algunos artículos aparecen más de una vez en la lista. Se aplica el último precio de cada uno.</div>' : '') +
-    '<div class="brow"><select onchange="PR.filtro=this.value;prPrev()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><button class="btn l sm" onclick="prSelAll(true)">Marcar todos los que cambian</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button><span class="sp"></span><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="l-crear"' + (PR.crear ? ' checked' : '') + ' onchange="PR.crear=this.checked"> Crear también los que no están (' + c.crear + ')</label></div>' +
-    (mostrar.length ? '<div class="twrap" style="max-height:52vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n">Costo nuevo</th><th class="n">Variación</th></tr></thead><tbody>' + mostrar.map(({ r, i }) => '<tr class="' + (r.var != null && Math.abs(r.var) > 40 ? 'flag' : '') + '"><td>' + (r.art ? '<input type="checkbox" ' + (r.sel ? 'checked' : '') + ' onchange="PR.rows[' + i + '].sel=this.checked;prCnt()">' : '') + '</td><td>' + esc(r.codigo) + '</td><td>' + esc(r.art ? r.art.descripcion : r.descripcion) + (r.art ? '' : ' <span class="badge b-warn">' + (r.codigo ? 'nuevo' : 'sin código') + '</span>') + '</td><td class="n">' + (r.art ? money(r.art.costo) : '—') + '</td><td class="n"><b>' + money(r.nuevo) + '</b></td><td class="n ' + (r.estado === 'sube' ? 'up' : r.estado === 'baja' ? 'dn' : 'eq') + '">' + (r.estado === 'nuevo' ? '' : r.var == null ? '—' : (r.var > 0 ? '+' : '') + fnum(r.var, 1) + '%') + (r.var != null && Math.abs(r.var) > 40 ? ' ⚠' : '') + '</td></tr>').join('') + '</tbody></table></div>' + (list.length > 400 ? '<div class="hint">Mostrando 400 de ' + list.length + '. Los que no ves también se aplican si están marcados.</div>' : '') : '<div class="vacio">No hay filas con ese filtro.</div>') +
+  const badge = r => r.art ? '' : ' <span class="badge b-warn">' + (r.estado === 'dudoso' ? 'para confirmar' : r.estado === 'ignorado' ? 'ignorado' : (r.codigo ? 'nuevo' : 'sin código')) + '</span>';
+  const acc = (r, i) => { if (r.art || r.estado === 'dudoso') return ''; const cd = r.res && r.res.candidatos && r.res.candidatos[0]; return (cd && cd.score >= 0.4 ? '<button class="btn l sm" title="' + esc(cd.nombre) + '" onclick="prVincSug(' + i + ')">¿Es «' + esc(cd.nombre.slice(0, 24)) + '»?</button> ' : '') + '<button class="btn l sm" onclick="prBuscar(' + i + ')">🔍 Vincular</button>'; };
+  $('#l-prev').innerHTML = prDudHtml() + '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">4. Revisá los cambios antes de aplicar</div>' +
+    '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div>' + (c.dudoso ? '<div class="scard"><div class="slbl">Para confirmar</div><div class="snum">' + c.dudoso + '</div></div>' : '') + '<div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
+    (PR.rows.some(r => r.dup) ? '<div class="alert a-warn">Dos filas de la lista apuntan al mismo artículo. Se aplica el último precio de ese artículo.</div>' : '') +
+    '<div class="brow"><select onchange="PR.filtro=this.value;prPrev()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['dudoso', 'Para confirmar'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><button class="btn l sm" onclick="prSelAll(true)">Marcar todos los que cambian</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button><span class="sp"></span><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="l-crear"' + (PR.crear ? ' checked' : '') + ' onchange="PR.crear=this.checked"> Crear también los que no están (' + c.crear + ')</label></div>' +
+    (mostrar.length ? '<div class="twrap" style="max-height:52vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n">Costo nuevo</th><th class="n">Variación</th><th></th></tr></thead><tbody>' + mostrar.map(({ r, i }) => '<tr class="' + (r.var != null && Math.abs(r.var) > 40 ? 'flag' : '') + '"><td>' + (r.art ? '<input type="checkbox" ' + (r.sel ? 'checked' : '') + ' onchange="PR.rows[' + i + '].sel=this.checked;prCnt()">' : '') + '</td><td>' + esc(r.codigo) + '</td><td>' + esc(r.art ? r.art.descripcion : r.descripcion) + badge(r) + '</td><td class="n">' + (r.art ? money(r.art.costo) : '—') + '</td><td class="n"><b>' + money(r.nuevo) + '</b></td><td class="n ' + (r.estado === 'sube' ? 'up' : r.estado === 'baja' ? 'dn' : 'eq') + '">' + (r.art ? (r.var == null ? '—' : (r.var > 0 ? '+' : '') + fnum(r.var, 1) + '%') + (r.var != null && Math.abs(r.var) > 40 ? ' ⚠' : '') : '') + '</td><td style="white-space:nowrap">' + acc(r, i) + '</td></tr>').join('') + '</tbody></table></div>' + (list.length > 400 ? '<div class="hint">Mostrando 400 de ' + list.length + '. Los que no ves también se aplican si están marcados.</div>' : '') : '<div class="vacio">No hay filas con ese filtro.</div>') +
     '<div class="mfoot"><span class="hint" id="l-cnt" style="margin-right:auto;align-self:center"></span><button class="btn o big" id="l-apply" onclick="prApply()">Aplicar los cambios marcados</button></div></div>';
   prCnt();
 }
 function prCnt() { const c = prCounts(), e = $('#l-cnt'); if (e) e.textContent = c.sel + ' artículo(s) marcado(s) para actualizar'; }
 function prSelAll(v) { PR.rows.forEach(r => { if (r.art && (r.estado === 'sube' || r.estado === 'baja')) r.sel = v; }); prPrev(); }
 async function prApply() {
-  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => !r.art && r.codigo) : [];
+  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => r.estado === 'nuevo' && r.codigo) : [];
   if (!sel.length && !crear.length) return toast('No hay nada marcado para aplicar', 'err');
   const last = {}; sel.forEach(r => { last[r.art.id] = r; }); const items = Object.values(last);
   if (!await ask('Vas a actualizar el costo y los precios de ' + items.length + ' artículos' + (crear.length ? ' y crear ' + crear.length + ' artículos nuevos' : '') + '.\nLos 3 precios de venta se ajustan en la misma proporción que el costo. Podés deshacerlo desde el historial.', 'Aplicar')) return;
@@ -1198,6 +1492,12 @@ async function prApply() {
         if (ins.length) await api('articulo_proveedor?on_conflict=negocio_id,proveedor_id,codigo_proveedor', { method: 'POST', body: ins.map(a => ({ negocio_id: S.neg.id, articulo_id: a.id, proveedor_id: PR.prov, codigo_proveedor: a.codigo, descripcion_proveedor: a.descripcion, costo_lista: a.costo })), prefer: 'resolution=ignore-duplicates' });
       }
     }
+    try {
+      const vistosV = {}; const vinc = [];
+      PR.rows.forEach(x => { if (!x.art || !x.codigo) return; const k = normCode(x.codigo); if (vistosV[k]) return; vistosV[k] = 1; vinc.push({ negocio_id: S.neg.id, articulo_id: x.art.id, proveedor_id: PR.prov, codigo_proveedor: x.codigo, descripcion_proveedor: x.descripcion || null, costo_lista: x.sel ? x.nuevo : x.art.costo }); });
+      for (let i = 0; i < vinc.length; i += 500) await api('articulo_proveedor?on_conflict=negocio_id,proveedor_id,codigo_proveedor', { method: 'POST', body: vinc.slice(i, i + 500), prefer: 'resolution=merge-duplicates' });
+    } catch (e) { console.warn('No se pudieron guardar los vínculos', e); toast('Se aplicó la lista, pero no se pudieron recordar los vínculos con este proveedor.', 'err'); }
+    PR._datos = null;
     PR.ultima = r.carga_id; PR.raw = null; PR.pdf = null; PR.rows = []; PR.fname = '';
     $('#pr-body').innerHTML = '<div class="alert a-ok" style="font-size:16px">✅ <b>Lista aplicada.</b> Se actualizaron <b>' + r.actualizados + '</b> artículos' + (r.sin_cambio ? ', ' + r.sin_cambio + ' ya estaban al día' : '') + (creados ? ' y se crearon <b>' + creados + '</b> nuevos' : '') + '.</div><div class="brow"><button class="btn l" onclick="prUndo(\'' + r.carga_id + '\').then(prListaUI)">↩ Deshacer esta carga</button><button class="btn" onclick="prRender()">Cargar otra lista</button><button class="btn l" onclick="go(\'articulos\')">Ver artículos</button></div>';
   });
