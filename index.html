@@ -53,6 +53,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0
 input[type=checkbox]{width:auto}
 textarea{resize:vertical;min-height:60px}
 .hint{font-size:12px;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
 .ayuda{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r);margin-bottom:14px;font-size:14px}
 .ayuda>summary{cursor:pointer;padding:10px 14px;font-weight:700;color:#78350f;list-style:none;display:flex;align-items:center;gap:8px}
 .ayuda>summary::-webkit-details-marker{display:none}
@@ -264,11 +265,12 @@ const AYUDA = {
   articulos: ['🔩 Tus artículos', '<ul><li>Acá está todo lo que vendés, con su <b>costo</b> y sus <b>3 precios de venta</b>.</li><li>El <b>costo</b> es lo que te cuesta a vos. Los precios de venta se calculan sumándole tu <b>margen</b>.</li><li>No hace falta cargar uno por uno: en <b>Precios → Cargar lista de proveedor</b> podés crear todos los artículos de una lista de una vez.</li><li><b>Filtrá</b> por texto, categoría, proveedor, marca o stock, y <b>tildá</b> los casilleros: aparece una barra para <b>ajustar precios, cambiar margen, categoría o proveedor</b> o dar de baja a todos los tildados juntos.</li><li>Para pasar un aumento de una lista del proveedor usá <b>Precios</b>.</li></ul>'],
   clientes: ['👷 Clientes y cuentas corrientes', '<ul><li>Cada cliente tiene su ficha con el <b>saldo</b> que te debe.</li><li>Las ventas en <b>cuenta corriente</b> suman a ese saldo.</li><li>Cuando te paga, entrá a la ficha y tocá <b>Registrar pago</b>: el saldo baja y el cobro entra en la caja.</li></ul>'],
   proveedores: ['🚚 Proveedores', '<ul><li>Cargá acá a quienes te venden mercadería.</li><li>El campo <b>descuento base</b> es el descuento que te hace ese proveedor sobre su lista. Se usa solo cuando cargás una lista en <b>Precios</b>.</li><li>Cada artículo queda vinculado a su proveedor, así la próxima lista se actualiza sola.</li></ul>'],
-  'precios-lista': ['📄 Cómo cargar una lista de proveedor (paso a paso)', '<ol><li><b>Elegí el proveedor.</b> Si es la primera vez, es normal que no tenga artículos cargados.</li><li><b>Descuento:</b> poné el % que te hace sobre su lista (0 si ninguno).</li><li><b>IVA:</b> tildá la casilla <u>solo si</u> los precios del PDF ya traen el IVA incluido. Si el proveedor te factura “precio + IVA”, dejala sin tildar.</li><li><b>Subí el archivo</b> (PDF, Excel o CSV).</li><li><b>Elegí las columnas:</b> mirá la tabla y marcá cuál es la descripción y cuál el precio (el código es opcional).</li><li><b>Revisá los cambios:</b> verde = baja, rojo = sube. Se aplican solo los <b>tildados</b>.</li><li>Tocá <b>Aplicar</b>. Siempre podés <b>deshacer</b> desde “Historial y deshacer”.</li></ol>' +
-    '<div class="ay-t">Primera vez con un proveedor</div>Tildá <b>“Crear también los que no están”</b> para que se creen todos los artículos de la lista.' +
+  'precios-lista': ['📄 Cómo cargar una lista de proveedor (paso a paso)', '<ol><li><b>Elegí el proveedor.</b> Si es la primera vez, es normal que no tenga artículos cargados.</li><li><b>Descuento:</b> poné el % que te hace sobre su lista (0 si ninguno).</li><li><b>IVA:</b> tildá la casilla <u>solo si</u> los precios del PDF ya traen el IVA incluido. Si el proveedor te factura “precio + IVA”, dejala sin tildar.</li><li><b>Subí el archivo</b> (PDF, Excel o CSV).</li><li><b>Elegí las columnas:</b> mirá la tabla y marcá cuál es la descripción y cuál el precio (el código es opcional).</li><li><b>Revisá los cambios:</b> verde = baja, rojo = sube. Se aplican solo los <b>tildados</b>, y se crean solo los nuevos que tildes.</li><li>Tocá <b>Aplicar</b>. Siempre podés <b>deshacer</b> desde “Historial y deshacer”.</li></ol>' +
+    '<div class="ay-t">Primera vez con un proveedor</div>Los productos que no tenés cargados aparecen como <b>nuevos</b> y <b>no se crean solos</b>: tildá <b>solo los que querés vender</b> (con el buscador y el botón “Tildar los nuevos que se ven”). Si querés todos, buscá vacío y tildá todos los nuevos.' +
     '<div class="ay-t">Muy importante</div><ul><li>Cargá siempre la lista <b>más nueva al final</b>: si cargás una vieja encima, los precios vuelven para atrás.</li><li>El sistema reconoce los artículos por <b>código</b> y, si no hay, por <b>nombre</b>. Los dudosos te aparecen en “Para confirmar”.</li><li>Los precios de venta se mueven en la <b>misma proporción</b> que el costo.</li></ul>'],
   'precios-masivo': ['📈 Ajuste masivo por porcentaje', '<ol><li>Filtrá por proveedor, categoría, marca o buscá por nombre.</li><li>Quedan <b>tildados todos los que se ven</b>: destildá los que no quieras tocar.</li><li>Poné el <b>%</b> (positivo sube, negativo baja): ves el costo nuevo de cada uno.</li><li>Tocá <b>Aplicar</b>. Cambian el costo y los 3 precios de venta de los tildados.</li></ol>Sirve cuando el proveedor te avisa “aumento del 8%” antes de mandarte la lista nueva. Se puede <b>deshacer</b>.'],
   'precios-hist': ['🕘 Historial y deshacer', '<ul><li>Acá figura cada carga de lista y cada ajuste que hiciste, con fecha y resultado.</li><li>Si algo salió mal, tocá <b>Deshacer</b> y los precios vuelven a como estaban antes de esa carga.</li><li>Conviene deshacer desde la <b>más reciente hacia atrás</b>.</li></ul>'],
+  importar: ['📂 Cargar tus productos de una vez', '<ol><li>Tocá <b>Plantilla en blanco</b>: se descarga un Excel con las columnas correctas y un ejemplo.</li><li>Copiá tus productos ahí (o armá tu archivo con esas mismas columnas). Solo son obligatorios <b>nombre</b> y <b>costo</b>.</li><li>Elegí el archivo y qué hacer si el código ya existe: <b>saltar</b> (no toca nada) o <b>actualizar</b>.</li><li>Tocá <b>Importar</b> y confirmá. Las categorías y proveedores que no existan se crean solos.</li></ol><div class="ay-t">Tips</div><ul><li>Con <b>Exportar</b> bajás todos tus artículos, los editás en Excel y los volvés a importar con “actualizar” para cambiar precios o stock en masa.</li><li>Podés poner el precio de venta (<b>precio_lista1..3</b>) o el porcentaje de ganancia (<b>util_lista1..3</b>).</li><li>Si recibís una lista de un proveedor en PDF, usá <b>Precios → Cargar lista</b>.</li></ul>'],
   caja: ['💵 Cómo funciona la Caja', '<ol><li><b>Abrir turno:</b> poné cuánta plata hay al empezar.</li><li>Durante el día las ventas y cobros se anotan solos, por medio de pago.</li><li>Podés registrar <b>ingresos o egresos</b> sueltos (gastos, retiros).</li><li><b>Cerrar turno:</b> contás lo que hay y el sistema te dice si sobra o falta (arqueo).</li></ol>'],
   config: ['⚙️ Configuración', '<ul><li><b>Datos del negocio:</b> nombre, CUIT, dirección y teléfono. Salen en los presupuestos.</li><li><b>Usuarios:</b> creá uno por cada persona que use el sistema y cambiá claves.</li></ul>']
 };
@@ -332,7 +334,7 @@ async function enterApp() {
   $('#huser').textContent = S.user ? S.user.nombre : '';
   $('#hflag').innerHTML = S.neg.es_demo ? '<span class="pill demo">Demo</span>' : (S.neg.es_dev ? '<span class="pill dev">Dev</span>' : '');
   document.title = (S.neg.nombre || 'Mi Gestor Ferretería') + ' · Mi Gestor Ferretería';
-  const MODS = [['inicio', 'Inicio', '🏠'], ['ventas', 'Ventas', '🧾'], ['presupuestos', 'Presupuestos', '📋'], ['articulos', 'Artículos', '🔩'], ['clientes', 'Clientes', '👷'], ['proveedores', 'Proveedores', '🚚'], ['precios', 'Precios', '💲'], ['caja', 'Caja', '💵'], ['config', 'Configuración', '⚙️']];
+  const MODS = [['inicio', 'Inicio', '🏠'], ['ventas', 'Ventas', '🧾'], ['presupuestos', 'Presupuestos', '📋'], ['articulos', 'Artículos', '🔩'], ['clientes', 'Clientes', '👷'], ['proveedores', 'Proveedores', '🚚'], ['precios', 'Precios', '💲'], ['importar', 'Importar / Exportar', '📂'], ['caja', 'Caja', '💵'], ['config', 'Configuración', '⚙️']];
   $('#nav').innerHTML = MODS.map(m => '<button class="tab" data-m="' + m[0] + '" onclick="go(\'' + m[0] + '\')"><span class="ti">' + m[2] + '</span>' + m[1] + '</button>').join('');
   try { await Promise.all([loadCats(), loadProvs(), loadClientes()]); } catch (e) { toast('No se pudieron cargar los datos base: ' + e.message, 'err'); }
   go('inicio');
@@ -1535,7 +1537,7 @@ async function prMatch() {
     PR.idx = LPC.indexarArticulos(arts.map(a => ({ codigo: a.codigo, nombre: a.descripcion, costo: a.costo, id: a.id })));
     const res = LPC.matchear(PR.rows.map((r, i) => ({ fila: i + 1, codigo: r.codigo, descripcion: r.descripcion, costo: r.precio })), PR.idx, rel);
     PR.rows.forEach((r, i) => { r.res = res[i]; r.eraDudoso = res[i].estado === 'dudoso'; r.sel = undefined; });
-    prAplicarRes(true); prPrev();
+    prAplicarRes(true); { const c0 = prCounts(); PR.filtro = c0.sube + c0.baja > 0 ? 'cambian' : (c0.nuevo ? 'nuevo' : 'todos'); PR.busq = ''; } prPrev();
   } catch (e) { if ($('#l-prev')) $('#l-prev').innerHTML = '<div class="alert a-bad" style="margin-top:12px">' + esc(e.message) + '</div>'; }
 }
 /** Calcula, para una fila ya macheada, el artículo, el costo nuevo y si sube/baja/igual. */
@@ -1546,13 +1548,14 @@ function prRowCalc(r, init) {
   r.nuevo = r2(r.precio * (1 - PR.desc / 100) / (PR.iva ? 1 + iva / 100 : 1));
   if (r.art) { r.var = r.art.costo > 0 ? (r.nuevo / r.art.costo - 1) * 100 : null; r.estado = Math.abs(r.nuevo - r.art.costo) < 0.005 ? 'igual' : (r.nuevo > r.art.costo ? 'sube' : 'baja'); }
   else { r.var = null; r.estado = res.estado === 'ignorado' ? 'ignorado' : res.estado === 'dudoso' ? 'dudoso' : 'nuevo'; }
-  if (init || r.sel === undefined) r.sel = r.estado === 'sube' || r.estado === 'baja';
+  if (init || r.sel === undefined || (r.art && !r._art)) r.sel = r.estado === 'sube' || r.estado === 'baja';
+  r._art = !!r.art;
 }
 function prAplicarRes(init) {
   PR.rows.forEach(r => prRowCalc(r, init));
   const seen = {}; PR.rows.forEach(r => { if (r.art) { if (seen[r.art.id]) r.dup = true; seen[r.art.id] = true; } });
 }
-function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, dudoso: 0, ignorado: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (r.estado === 'nuevo' && (r.codigo || r.descripcion)) c.crear++; }); return c; }
+function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, dudoso: 0, ignorado: 0, sel: 0, crear: 0, selNuevo: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (r.estado === 'nuevo' && (r.codigo || r.descripcion)) { c.crear++; if (r.sel) c.selNuevo++; } }); return c; }
 /* ---- vincular a mano (los "dudosos" y los "nuevos" que en realidad ya tenés) ---- */
 function prVincular(i, cod) {
   const r = PR.rows[i]; if (!cod) return toast('Elegí un artículo o ignorá la fila', 'err');
@@ -1594,26 +1597,38 @@ function prDudHtml() {
     '<div class="brow"><button class="btn l sm" onclick="prDudSug()">✔ Vincular los sugeridos con 75% o más de parecido</button></div>' +
     '<div class="twrap" style="max-height:44vh;overflow-y:auto"><table><thead><tr><th>Lista del proveedor</th><th class="n">Costo</th><th>Tu artículo</th><th>Motivo</th><th></th></tr></thead><tbody>' + duds.slice(0, 150).map(fila).join('') + '</tbody></table></div>' + (duds.length > 150 ? '<div class="hint">Mostrando 150 de ' + duds.length + '. Vinculá o ignorá estos y aparecen los siguientes.</div>' : '') + '</div>';
 }
-function prPrev() {
-  const c = prCounts(); const f = PR.filtro;
-  const list = PR.rows.map((r, i) => ({ r, i })).filter(x => f === 'todos' || (f === 'cambian' && (x.r.estado === 'sube' || x.r.estado === 'baja')) || f === x.r.estado);
-  const mostrar = list.slice(0, 400);
+function prFiltradas() {
+  const f = PR.filtro; const t = LPC.normalizarTexto(PR.busq || '');
+  return PR.rows.map((r, i) => ({ r, i })).filter(x => (f === 'todos' || (f === 'cambian' && (x.r.estado === 'sube' || x.r.estado === 'baja')) || f === x.r.estado) && (!t || LPC.normalizarTexto((x.r.descripcion || '') + ' ' + (x.r.codigo || '')).includes(t)));
+}
+function prTabla() {
+  const box = $('#l-tabla'); if (!box) return;
+  const list = prFiltradas(); const mostrar = list.slice(0, 400);
   const badge = r => r.art ? '' : ' <span class="badge b-warn">' + (r.estado === 'dudoso' ? 'para confirmar' : r.estado === 'ignorado' ? 'ignorado' : 'nuevo') + '</span>';
   const acc = (r, i) => { if (r.art || r.estado === 'dudoso') return ''; const cd = r.res && r.res.candidatos && r.res.candidatos[0]; return (cd && cd.score >= 0.4 ? '<button class="btn l sm" title="' + esc(cd.nombre) + '" onclick="prVincSug(' + i + ')">¿Es «' + esc(cd.nombre.slice(0, 24)) + '»?</button> ' : '') + '<button class="btn l sm" onclick="prBuscar(' + i + ')">🔍 Vincular</button>'; };
+  box.innerHTML = mostrar.length ? '<div class="twrap" style="max-height:52vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n">Costo nuevo</th><th class="n">Variación</th><th></th></tr></thead><tbody>' + mostrar.map(({ r, i }) => '<tr class="' + (r.var != null && Math.abs(r.var) > 40 ? 'flag' : '') + '"><td>' + (r.art || r.estado === 'nuevo' ? '<input type="checkbox" ' + (r.sel ? 'checked' : '') + ' onchange="PR.rows[' + i + '].sel=this.checked;prCnt()">' : '') + '</td><td>' + esc(r.codigo) + '</td><td>' + esc(r.art ? r.art.descripcion : r.descripcion) + badge(r) + '</td><td class="n">' + (r.art ? money(r.art.costo) : '—') + '</td><td class="n"><b>' + money(r.nuevo) + '</b></td><td class="n ' + (r.estado === 'sube' ? 'up' : r.estado === 'baja' ? 'dn' : 'eq') + '">' + (r.art ? (r.var == null ? '—' : (r.var > 0 ? '+' : '') + fnum(r.var, 1) + '%') + (r.var != null && Math.abs(r.var) > 40 ? ' ⚠' : '') : '') + '</td><td style="white-space:nowrap">' + acc(r, i) + '</td></tr>').join('') + '</tbody></table></div>' + (list.length > 400 ? '<div class="hint">Mostrando 400 de ' + list.length + '. Usá el buscador o el filtro para ver el resto.</div>' : '') : '<div class="vacio">No hay filas con ese filtro.</div>';
+  prCnt();
+}
+function prPrev() {
+  const c = prCounts(); const f = PR.filtro;
   $('#l-prev').innerHTML = prDudHtml() + '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">5. Revisá los cambios antes de aplicar</div>' +
     '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div>' + (c.dudoso ? '<div class="scard"><div class="slbl">Para confirmar</div><div class="snum">' + c.dudoso + '</div></div>' : '') + '<div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
     (PR.rows.some(r => r.dup) ? '<div class="alert a-warn">Dos filas de la lista apuntan al mismo artículo. Se aplica el último precio de ese artículo.</div>' : '') +
-    '<div class="brow"><select onchange="PR.filtro=this.value;prPrev()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['dudoso', 'Para confirmar'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><button class="btn l sm" onclick="prSelAll(true)">Marcar todos los que cambian</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button><span class="sp"></span><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="l-crear"' + (PR.crear ? ' checked' : '') + ' onchange="PR.crear=this.checked"> Crear también los que no están (' + c.crear + ')</label></div>' +
-    (mostrar.length ? '<div class="twrap" style="max-height:52vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n">Costo nuevo</th><th class="n">Variación</th><th></th></tr></thead><tbody>' + mostrar.map(({ r, i }) => '<tr class="' + (r.var != null && Math.abs(r.var) > 40 ? 'flag' : '') + '"><td>' + (r.art ? '<input type="checkbox" ' + (r.sel ? 'checked' : '') + ' onchange="PR.rows[' + i + '].sel=this.checked;prCnt()">' : '') + '</td><td>' + esc(r.codigo) + '</td><td>' + esc(r.art ? r.art.descripcion : r.descripcion) + badge(r) + '</td><td class="n">' + (r.art ? money(r.art.costo) : '—') + '</td><td class="n"><b>' + money(r.nuevo) + '</b></td><td class="n ' + (r.estado === 'sube' ? 'up' : r.estado === 'baja' ? 'dn' : 'eq') + '">' + (r.art ? (r.var == null ? '—' : (r.var > 0 ? '+' : '') + fnum(r.var, 1) + '%') + (r.var != null && Math.abs(r.var) > 40 ? ' ⚠' : '') : '') + '</td><td style="white-space:nowrap">' + acc(r, i) + '</td></tr>').join('') + '</tbody></table></div>' + (list.length > 400 ? '<div class="hint">Mostrando 400 de ' + list.length + '. Los que no ves también se aplican si están marcados.</div>' : '') : '<div class="vacio">No hay filas con ese filtro.</div>') +
-    '<div class="mfoot"><span class="hint" id="l-cnt" style="margin-right:auto;align-self:center"></span><button class="btn o big" id="l-apply" onclick="prApply()">Aplicar los cambios marcados</button></div></div>';
-  prCnt();
+    (c.nuevo ? '<div class="alert a-info"><b>' + c.nuevo + ' productos de la lista todavía no están en tu catálogo.</b> No se crean solos: tildá <b>solo los que querés vender</b> (usá el buscador y el botón “Tildar los nuevos que se ven”) y se crean al aplicar.</div>' : '') +
+    '<div class="brow"><div class="srch" style="max-width:280px">🔎<input id="l-bus" placeholder="Buscar en la lista…" value="' + esc(PR.busq || '') + '" oninput="PR.busq=this.value;clearTimeout(PR._tb);PR._tb=setTimeout(prTabla,250)"></div>' +
+    '<select onchange="PR.filtro=this.value;prTabla()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['dudoso', 'Para confirmar'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>' +
+    '<div class="brow"><button class="btn l sm" onclick="prSelAll(true)">Marcar los que cambian de precio</button><button class="btn l sm" onclick="prNuevos(true)">Tildar los nuevos que se ven</button><button class="btn l sm" onclick="prNuevos(false)">Destildar los nuevos que se ven</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button></div>' +
+    '<div id="l-tabla"></div>' +
+    '<div class="mfoot"><span class="hint" id="l-cnt" style="margin-right:auto;align-self:center"></span><button class="btn o big" id="l-apply" onclick="prApply()">Aplicar lo marcado</button></div></div>';
+  prTabla();
 }
-function prCnt() { const c = prCounts(), e = $('#l-cnt'); if (e) e.textContent = c.sel + ' artículo(s) marcado(s) para actualizar'; }
-function prSelAll(v) { PR.rows.forEach(r => { if (r.art && (r.estado === 'sube' || r.estado === 'baja')) r.sel = v; }); prPrev(); }
+function prCnt() { const c = prCounts(), e = $('#l-cnt'); if (e) e.textContent = c.sel + ' precio(s) a actualizar · ' + c.selNuevo + ' producto(s) nuevo(s) a crear'; }
+function prSelAll(v) { PR.rows.forEach(r => { r.sel = r.art ? (v && (r.estado === 'sube' || r.estado === 'baja')) : (v ? r.sel : false); }); prTabla(); }
+function prNuevos(v) { prFiltradas().forEach(({ r }) => { if (!r.art && r.estado === 'nuevo') r.sel = v; }); prTabla(); }
 /** Código automático y estable (mismo nombre → mismo código) para productos de listas sin códigos. */
 function prCodAuto(d) { const t = normDesc(d || ''); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return 'L' + h.toString(36).toUpperCase().padStart(7, '0'); }
 async function prApply() {
-  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => r.estado === 'nuevo' && (r.codigo || r.descripcion)) : [];
+  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.rows.filter(r => r.sel && r.estado === 'nuevo' && (r.codigo || r.descripcion));
   if (!sel.length && !crear.length) return toast('No hay nada marcado para aplicar', 'err');
   const last = {}; sel.forEach(r => { last[r.art.id] = r; }); const items = Object.values(last);
   if (!await ask('Vas a actualizar el costo y los precios de ' + items.length + ' artículos' + (crear.length ? ' y crear ' + crear.length + ' artículos nuevos' : '') + '.\nLos 3 precios de venta se ajustan en la misma proporción que el costo. Podés deshacerlo desde el historial.', 'Aplicar')) return;
@@ -1637,6 +1652,128 @@ async function prApply() {
     PR._datos = null;
     PR.ultima = r.carga_id; PR.raw = null; PR.pdf = null; PR.rows = []; PR.fname = '';
     $('#pr-body').innerHTML = '<div class="alert a-ok" style="font-size:16px">✅ <b>Lista aplicada.</b> Se actualizaron <b>' + r.actualizados + '</b> artículos' + (r.sin_cambio ? ', ' + r.sin_cambio + ' ya estaban al día' : '') + (creados ? ' y se crearon <b>' + creados + '</b> nuevos' : '') + '.</div><div class="brow"><button class="btn l" onclick="prUndo(\'' + r.carga_id + '\').then(prListaUI)">↩ Deshacer esta carga</button><button class="btn" onclick="prRender()">Cargar otra lista</button><button class="btn l" onclick="go(\'articulos\')">Ver artículos</button></div>';
+  });
+}
+
+/* ===================== IMPORTAR / EXPORTAR (mismo modelo que Mi Gestor: columnas fijas, plantilla, saltar/actualizar) ===================== */
+const IMP_COLS = ['codigo', 'nombre', 'categoria', 'unidad', 'marca', 'proveedor', 'stock', 'stock_minimo', 'costo', 'iva', 'precio_lista1', 'precio_lista2', 'precio_lista3'];
+const impNorm = h => String(h == null ? '' : h).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+const IMP_ALIAS = { descripcion: 'nombre', detalle: 'nombre', producto: 'nombre', articulo: 'nombre', stock_min: 'stock_minimo', minimo: 'stock_minimo', precio_mayor: 'precio_lista2', util_mayor: 'util_lista2' };
+R.importar = async () => {
+  main('<div class="grid2"><div class="panel"><div class="ptit">📥 Importar artículos desde Excel o CSV</div>' +
+    '<div class="alert a-info" style="margin-bottom:14px">El archivo debe tener estas columnas (en la primera fila):<br><b>' + IMP_COLS.join(', ') + '</b><br><span class="hint">Solo son obligatorias <b>nombre</b> y <b>costo</b>. Si falta el código se genera uno. Si no ponés precios de venta, se calculan con margen de 30% / 20% / 15% sobre el costo. En lugar de <b>precio_lista1..3</b> podés usar <b>util_lista1..3</b> (porcentaje de ganancia sobre el costo).</span></div>' +
+    '<div class="fg" style="margin-bottom:14px"><label>Seleccionar archivo (.xlsx, .xls o .csv)</label><input type="file" id="imp-file" accept=".csv,.txt,.xls,.xlsx" style="background:#fff;padding:8px"></div>' +
+    '<div class="fg" style="margin-bottom:14px"><label>¿Qué hacer si el código ya existe?</label><select id="imp-modo"><option value="saltar">Saltar (no sobreescribir)</option><option value="actualizar">Actualizar el existente (solo las columnas que trae el archivo)</option></select></div>' +
+    '<button class="btn o" id="imp-ok" onclick="impEjecutar()">📥 Importar</button><div id="imp-res" style="margin-top:12px"></div></div>' +
+    '<div class="panel"><div class="ptit">📤 Exportar artículos</div><p style="font-size:13px;color:var(--mut);margin-bottom:14px">Descarga todos tus artículos en un archivo que se abre en Excel y se puede volver a importar para actualizar precios o stock masivamente.</p><button class="btn o" style="margin-bottom:10px" id="imp-exp" onclick="impExportar()">📤 Exportar todos los artículos</button>' +
+    '<div class="divider" style="margin:14px 0;border-top:1px solid var(--brd)"></div><div class="ptit" style="font-size:16px">📋 Plantilla vacía</div><p style="font-size:13px;color:var(--mut);margin-bottom:12px">Descargá una plantilla con los encabezados correctos y un ejemplo para cargar productos nuevos.</p><button class="btn l" onclick="impPlantilla()">📋 Plantilla en blanco</button></div></div>');
+};
+function impDescargar(filas, nombre) {
+  let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"><style>td.cod{mso-number-format:"@";}</style></head><body><table>';
+  html += '<tr>' + IMP_COLS.map(c => '<th style="background:#334155;color:white;font-weight:bold;padding:5px">' + c + '</th>').join('') + '</tr>';
+  filas.forEach(f => { html += '<tr>' + f.map((v, i) => i === 0 ? '<td class="cod" style="mso-number-format:&quot;@&quot;">' + esc(v) + '</td>' : '<td>' + esc(v) + '</td>').join('') + '</tr>'; });
+  html += '</table></body></html>';
+  const u = URL.createObjectURL(new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' })); const a = document.createElement('a'); a.href = u; a.download = nombre; a.click(); URL.revokeObjectURL(u);
+}
+function impPlantilla() {
+  const f = [['7798333090043', 'Tornillo hexagonal 1/4 x 2', 'Bulonería', 'un', 'Genérica', 'Proveedor Ejemplo', '200', '20', '45', '21', '60', '54', '52']];
+  for (let i = 0; i < 100; i++) f.push(['', '', '', '', '', '', '', '', '', '', '', '', '']);
+  impDescargar(f, 'plantilla_articulos.xls');
+}
+async function impExportar() {
+  await busy($('#imp-exp'), async () => {
+    const arts = await fetchAll('articulos?select=*&activo=eq.true');
+    const cn = {}, pn = {}; S.cats.forEach(c => { cn[c.id] = c.nombre; }); S.provs.forEach(x => { pn[x.id] = x.nombre; });
+    impDescargar(arts.sort((a, b) => a.descripcion.localeCompare(b.descripcion)).map(a => [a.codigo, a.descripcion, cn[a.categoria_id] || '', a.unidad, a.marca || '', pn[a.proveedor_id] || '', a.stock, a.stock_min, a.costo, a.iva_pct, a.precio1, a.precio2, a.precio3]), 'articulos_' + new Date().toISOString().slice(0, 10) + '.xls');
+    toast(arts.length + ' artículos exportados', 'ok');
+  });
+}
+async function impLeer(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'xlsx' || ext === 'xls') {
+    await libXLSX(); const buf = await f.arrayBuffer(); const wb = window.XLSX.read(buf, { type: 'array' });
+    return window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+  }
+  const buf = await f.arrayBuffer(); let t = new TextDecoder('utf-8').decode(buf); if (t.indexOf('�') >= 0) t = new TextDecoder('windows-1252').decode(buf);
+  return parseCSV(t.replace(/^﻿/, ''));
+}
+async function impEjecutar() {
+  const f = $('#imp-file').files[0]; if (!f) return toast('Seleccioná un archivo', 'err');
+  const modo = val('imp-modo'); const out = $('#imp-res');
+  await busy($('#imp-ok'), async () => {
+    out.innerHTML = '<div class="vacio">Leyendo el archivo…</div>';
+    const raw = (await impLeer(f)).filter(r => r && r.some(c => String(c == null ? '' : c).trim() !== ''));
+    if (raw.length < 2) { out.innerHTML = '<div class="alert a-bad">El archivo no tiene datos.</div>'; return; }
+    const hd = raw[0].map(h => { const n = impNorm(h); return IMP_ALIAS[n] || n; });
+    if (hd.indexOf('nombre') < 0) { out.innerHTML = '<div class="alert a-bad">No encontré la columna <b>nombre</b> en la primera fila. Descargá la plantilla y copiá tus datos ahí.</div>'; return; }
+    const tiene = c => hd.indexOf(c) >= 0;
+    const get = (r, c) => { const i = hd.indexOf(c); return i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : ''; };
+    const num = (r, c) => { const v = get(r, c); if (v === '') return undefined; const n = parseNum(v); return isNaN(n) ? undefined : n; };
+    const filas = []; let errores = []; const vistos = {};
+    for (let i = 1; i < raw.length; i++) {
+      const r = raw[i]; const nom = get(r, 'nombre'); if (!nom) { errores.push(i + 1); continue; }
+      const cod = get(r, 'codigo') || prCodAuto(nom);
+      const costo = num(r, 'costo');
+      const o = { codigo: cod, descripcion: nom, _cat: get(r, 'categoria'), _prov: get(r, 'proveedor'), costo, stock: num(r, 'stock'), stock_min: num(r, 'stock_minimo'), iva_pct: num(r, 'iva'), unidad: get(r, 'unidad') || undefined, marca: get(r, 'marca') || undefined, p: [num(r, 'precio_lista1'), num(r, 'precio_lista2'), num(r, 'precio_lista3')], u: [num(r, 'util_lista1'), num(r, 'util_lista2'), num(r, 'util_lista3')] };
+      const k = normCode(cod); if (vistos[k] != null) { const prev = filas[vistos[k]]; Object.keys(o).forEach(c => { const v = o[c]; if (c === 'p' || c === 'u') { v.forEach((n, j) => { if (n != null) prev[c][j] = n; }); } else if (v !== undefined && v !== '') prev[c] = v; }); } else { vistos[k] = filas.length; filas.push(o); }
+    }
+    if (!filas.length) { out.innerHTML = '<div class="alert a-bad">No hay filas con nombre para importar.</div>'; return; }
+    out.innerHTML = '<div class="vacio">Comparando con tus artículos…</div>';
+    const exist = await fetchAll('articulos?select=id,codigo,activo'); const porCod = {}; exist.forEach(a => { porCod[normCode(a.codigo)] = a; });
+    const nuevos = filas.filter(x => !porCod[normCode(x.codigo)]), ya = filas.filter(x => porCod[normCode(x.codigo)]);
+    if (!await ask('Vas a importar ' + filas.length + ' filas:\n• ' + nuevos.length + ' artículos nuevos\n• ' + ya.length + ' ya existen → se ' + (modo === 'actualizar' ? 'actualizan' : 'saltean') + (errores.length ? '\n• ' + errores.length + ' filas sin nombre (se ignoran)' : ''), 'Importar')) { out.innerHTML = ''; return; }
+    // categorías y proveedores que no existen: se crean (como en Mi Gestor)
+    const nk = x => LPC.normalizarTexto(x);
+    const catPor = {}; S.cats.forEach(c => { catPor[nk(c.nombre)] = c.id; }); const provPor = {}; S.provs.forEach(x => { provPor[nk(x.nombre)] = x.id; });
+    const usados = modo === 'actualizar' ? filas : nuevos;
+    const faltCat = [...new Set(usados.map(x => x._cat).filter(c => c && !catPor[nk(c)]))]; const faltProv = [...new Set(usados.map(x => x._prov).filter(c => c && !provPor[nk(c)]))];
+    if (faltCat.length) { const r = await api('categorias', { method: 'POST', body: faltCat.map(n => ({ negocio_id: S.neg.id, nombre: n })), prefer: 'return=representation' }); r.forEach(c => { catPor[nk(c.nombre)] = c.id; }); }
+    if (faltProv.length) { const r = await api('proveedores', { method: 'POST', body: faltProv.map(n => ({ negocio_id: S.neg.id, nombre: n })), prefer: 'return=representation' }); r.forEach(c => { provPor[nk(c.nombre)] = c.id; }); }
+    // precios: precio final → si no, % de utilidad → si no, margen por defecto
+    const DEF = [30, 20, 15];
+    const precios = x => {
+      const c = x.costo || 0; const r = {}; let m1 = null;
+      for (let j = 0; j < 3; j++) {
+        let pv = x.p[j];
+        if (!(pv > 0) && x.u[j] != null && c > 0) pv = c * (1 + x.u[j] / 100);
+        if (pv > 0) { r['precio' + (j + 1)] = Math.round(pv); if (j === 0 && c > 0) m1 = r2((pv / c - 1) * 100); }
+      }
+      return { r, m1 };
+    };
+    let agregados = 0, actualizados = 0, saltados = 0;
+    // nuevos
+    const body = nuevos.map(x => {
+      const c = x.costo || 0; const { r, m1 } = precios(x);
+      const b = { negocio_id: S.neg.id, codigo: x.codigo, descripcion: x.descripcion, unidad: x.unidad || 'un', marca: x.marca || null, costo: c, iva_pct: x.iva_pct != null ? x.iva_pct : 21, margen_pct: m1 != null ? m1 : DEF[0], stock: x.stock || 0, stock_min: x.stock_min || 0, categoria_id: x._cat ? catPor[nk(x._cat)] : null, proveedor_id: x._prov ? provPor[nk(x._prov)] : null };
+      for (let j = 0; j < 3; j++) b['precio' + (j + 1)] = r['precio' + (j + 1)] != null ? r['precio' + (j + 1)] : Math.round(c * (1 + (j === 0 ? (m1 != null ? m1 : DEF[0]) : DEF[j]) / 100));
+      return b;
+    });
+    for (let i = 0; i < body.length; i += 300) {
+      out.innerHTML = '<div class="vacio">Creando artículos… ' + Math.min(i + 300, body.length) + ' de ' + body.length + '</div>';
+      const ins = await api('articulos?on_conflict=negocio_id,codigo', { method: 'POST', body: body.slice(i, i + 300), prefer: 'resolution=ignore-duplicates,return=representation' });
+      agregados += ins.length;
+      const links = ins.filter(a => a.proveedor_id).map(a => ({ negocio_id: S.neg.id, articulo_id: a.id, proveedor_id: a.proveedor_id, codigo_proveedor: a.codigo, descripcion_proveedor: a.descripcion, costo_lista: a.costo }));
+      if (links.length) { try { await api('articulo_proveedor?on_conflict=negocio_id,proveedor_id,codigo_proveedor', { method: 'POST', body: links, prefer: 'resolution=merge-duplicates' }); } catch (e) { console.warn(e); } }
+    }
+    // existentes
+    if (modo === 'actualizar') {
+      for (let i = 0; i < ya.length; i += 10) {
+        out.innerHTML = '<div class="vacio">Actualizando artículos… ' + Math.min(i + 10, ya.length) + ' de ' + ya.length + '</div>';
+        await Promise.all(ya.slice(i, i + 10).map(async x => {
+          const b = { activo: true, updated_at: new Date().toISOString(), descripcion: x.descripcion };
+          if (x.unidad) b.unidad = x.unidad; if (x.marca) b.marca = x.marca;
+          if (x.stock != null) b.stock = x.stock; if (x.stock_min != null) b.stock_min = x.stock_min; if (x.iva_pct != null) b.iva_pct = x.iva_pct;
+          if (x._cat) b.categoria_id = catPor[nk(x._cat)]; if (x._prov) b.proveedor_id = provPor[nk(x._prov)];
+          if (x.costo != null) {
+            b.costo = x.costo; const { r, m1 } = precios(x); Object.assign(b, r); if (m1 != null) b.margen_pct = m1;
+            if (!r.precio1 && x.costo > 0) b.precio1 = Math.round(x.costo * 1.3); if (!r.precio2 && x.costo > 0) b.precio2 = Math.round(x.costo * 1.2); if (!r.precio3 && x.costo > 0) b.precio3 = Math.round(x.costo * 1.15);
+          } else { const { r, m1 } = precios(x); Object.assign(b, r); if (m1 != null) b.margen_pct = m1; }
+          await api('articulos?id=eq.' + porCod[normCode(x.codigo)].id, { method: 'PATCH', body: b }); actualizados++;
+        }));
+      }
+    } else saltados = ya.length;
+    try { await Promise.all([loadCats(), loadProvs()]); } catch (e) { }
+    out.innerHTML = '<div class="alert a-ok">✅ <b>Importación completada</b><br>• ' + agregados + ' artículos nuevos agregados<br>• ' + actualizados + ' artículos actualizados' + (saltados ? '<br>• ' + saltados + ' ya existían y se saltearon' : '') + (faltCat.length ? '<br>• ' + faltCat.length + ' categorías nuevas creadas' : '') + (faltProv.length ? '<br>• ' + faltProv.length + ' proveedores nuevos creados' : '') + (errores.length ? '<br>• ' + errores.length + ' filas sin nombre ignoradas (filas ' + errores.slice(0, 10).join(', ') + (errores.length > 10 ? '…' : '') + ')' : '') + '</div><div class="brow"><button class="btn" onclick="go(\'articulos\')">Ver artículos</button></div>';
   });
 }
 
