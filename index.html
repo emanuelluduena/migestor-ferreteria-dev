@@ -53,6 +53,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0
 input[type=checkbox]{width:auto}
 textarea{resize:vertical;min-height:60px}
 .hint{font-size:12px;color:var(--mut)}
+.ayuda{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r);margin-bottom:14px;font-size:14px}
+.ayuda>summary{cursor:pointer;padding:10px 14px;font-weight:700;color:#78350f;list-style:none;display:flex;align-items:center;gap:8px}
+.ayuda>summary::-webkit-details-marker{display:none}
+.ayuda>summary::after{content:'Ver / ocultar';margin-left:auto;font-weight:500;font-size:12px;color:#a16207}
+.ayuda .ay-b{padding:2px 16px 14px;color:#451a03;line-height:1.5}
+.ayuda ol,.ayuda ul{margin:6px 0 6px 20px;padding:0}.ayuda li{margin:3px 0}
+.ayuda .ay-t{font-weight:700;margin-top:8px}
+.fhint{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.35}
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 15px;border-radius:var(--rs);border:1.5px solid transparent;cursor:pointer;font-weight:600;background:var(--steel);color:#fff;white-space:nowrap;transition:filter .12s}
 .btn:hover{filter:brightness(1.12)}.btn:disabled{opacity:.55;cursor:not-allowed}
 .btn.o{background:var(--acc)}.btn.g{background:var(--ok)}.btn.r{background:var(--bad)}
@@ -246,7 +255,30 @@ async function busy(btn, fn) {
   try { return await fn(); } catch (e) { toast(e.message || String(e), 'err'); } finally { if (btn) btn.disabled = false; }
 }
 const put = (sel, html) => { const e = $(sel); if (e) e.innerHTML = html; return !!e; };
-const main = h => { $('#main').innerHTML = h; window.scrollTo(0, 0); };
+
+/* ---- Ayuda en cada pantalla: cuadro plegable arriba (queda cerrado si lo cerrás) ---- */
+const AYUDA = {
+  inicio: ['👋 ¿Qué ves en el Inicio?', '<ul><li>Un <b>resumen de hoy</b>: ventas, caja y cuentas por cobrar.</li><li>Desde el menú de la izquierda entrás a cada parte del sistema.</li><li>Si recién empezás: cargá <b>Proveedores</b> y <b>Artículos</b> (o subí una lista en <b>Precios</b>), y después ya podés vender y presupuestar.</li></ul>'],
+  ventas: ['🧾 Cómo vender', '<ol><li>Abrí el <b>turno de caja</b> (menú <b>Caja</b>) si todavía no lo hiciste.</li><li>Buscá los artículos por código o nombre y agregalos al carrito.</li><li>Elegí el cliente (opcional) y la forma de pago.</li><li>Confirmá la venta. El stock se descuenta solo.</li></ol><div class="ay-t">Cuenta corriente</div>Si elegís <b>cuenta corriente</b>, la venta queda como deuda en la ficha del cliente, para cobrarla después.'],
+  presupuestos: ['📋 Cómo hacer un presupuesto', '<ol><li>Elegí el cliente y agregá los artículos que te pidió.</li><li>Guardalo. Queda numerado, con la leyenda de <b>presupuesto</b> (no es factura).</li><li>Enviáselo por <b>WhatsApp</b> o por <b>mail</b>: se abre la aplicación con el texto ya armado.</li><li>Si el cliente acepta, usá <b>Vender presupuesto</b>: se registra la venta y se descuenta el stock.</li></ol>'],
+  articulos: ['🔩 Tus artículos', '<ul><li>Acá está todo lo que vendés, con su <b>costo</b> y sus <b>3 precios de venta</b>.</li><li>El <b>costo</b> es lo que te cuesta a vos. Los precios de venta se calculan sumándole tu <b>margen</b>.</li><li>No hace falta cargar uno por uno: en <b>Precios → Cargar lista de proveedor</b> podés crear todos los artículos de una lista de una vez.</li><li>Para cambiar precios de muchos a la vez usá <b>Precios</b>, no los edites a mano.</li></ul>'],
+  clientes: ['👷 Clientes y cuentas corrientes', '<ul><li>Cada cliente tiene su ficha con el <b>saldo</b> que te debe.</li><li>Las ventas en <b>cuenta corriente</b> suman a ese saldo.</li><li>Cuando te paga, entrá a la ficha y tocá <b>Registrar pago</b>: el saldo baja y el cobro entra en la caja.</li></ul>'],
+  proveedores: ['🚚 Proveedores', '<ul><li>Cargá acá a quienes te venden mercadería.</li><li>El campo <b>descuento base</b> es el descuento que te hace ese proveedor sobre su lista. Se usa solo cuando cargás una lista en <b>Precios</b>.</li><li>Cada artículo queda vinculado a su proveedor, así la próxima lista se actualiza sola.</li></ul>'],
+  'precios-lista': ['📄 Cómo cargar una lista de proveedor (paso a paso)', '<ol><li><b>Elegí el proveedor.</b> Si es la primera vez, es normal que no tenga artículos cargados.</li><li><b>Descuento:</b> poné el % que te hace sobre su lista (0 si ninguno).</li><li><b>IVA:</b> tildá la casilla <u>solo si</u> los precios del PDF ya traen el IVA incluido. Si el proveedor te factura “precio + IVA”, dejala sin tildar.</li><li><b>Subí el archivo</b> (PDF, Excel o CSV).</li><li><b>Elegí las columnas:</b> mirá la tabla y marcá cuál es la descripción y cuál el precio (el código es opcional).</li><li><b>Revisá los cambios:</b> verde = baja, rojo = sube. Se aplican solo los <b>tildados</b>.</li><li>Tocá <b>Aplicar</b>. Siempre podés <b>deshacer</b> desde “Historial y deshacer”.</li></ol>' +
+    '<div class="ay-t">Primera vez con un proveedor</div>Tildá <b>“Crear también los que no están”</b> para que se creen todos los artículos de la lista.' +
+    '<div class="ay-t">Muy importante</div><ul><li>Cargá siempre la lista <b>más nueva al final</b>: si cargás una vieja encima, los precios vuelven para atrás.</li><li>El sistema reconoce los artículos por <b>código</b> y, si no hay, por <b>nombre</b>. Los dudosos te aparecen en “Para confirmar”.</li><li>Los precios de venta se mueven en la <b>misma proporción</b> que el costo.</li></ul>'],
+  'precios-masivo': ['📈 Ajuste masivo por porcentaje', '<ol><li>Filtrá por proveedor, categoría, marca o buscá por nombre.</li><li>Quedan <b>tildados todos los que se ven</b>: destildá los que no quieras tocar.</li><li>Poné el <b>%</b> (positivo sube, negativo baja): ves el costo nuevo de cada uno.</li><li>Tocá <b>Aplicar</b>. Cambian el costo y los 3 precios de venta de los tildados.</li></ol>Sirve cuando el proveedor te avisa “aumento del 8%” antes de mandarte la lista nueva. Se puede <b>deshacer</b>.'],
+  'precios-hist': ['🕘 Historial y deshacer', '<ul><li>Acá figura cada carga de lista y cada ajuste que hiciste, con fecha y resultado.</li><li>Si algo salió mal, tocá <b>Deshacer</b> y los precios vuelven a como estaban antes de esa carga.</li><li>Conviene deshacer desde la <b>más reciente hacia atrás</b>.</li></ul>'],
+  caja: ['💵 Cómo funciona la Caja', '<ol><li><b>Abrir turno:</b> poné cuánta plata hay al empezar.</li><li>Durante el día las ventas y cobros se anotan solos, por medio de pago.</li><li>Podés registrar <b>ingresos o egresos</b> sueltos (gastos, retiros).</li><li><b>Cerrar turno:</b> contás lo que hay y el sistema te dice si sobra o falta (arqueo).</li></ol>'],
+  config: ['⚙️ Configuración', '<ul><li><b>Datos del negocio:</b> nombre, CUIT, dirección y teléfono. Salen en los presupuestos.</li><li><b>Usuarios:</b> creá uno por cada persona que use el sistema y cambiá claves.</li></ul>']
+};
+function ayudaClave() { return S.mod === 'precios' ? 'precios-' + ({ lista: 'lista', masivo: 'masivo', hist: 'hist' }[PR.tab] || 'lista') : S.mod; }
+function ayudaHtml() {
+  const k = ayudaClave(), a = AYUDA[k]; if (!a) return '';
+  let cerrado = false; try { cerrado = localStorage.getItem('ferre_ayuda_' + k) === '0'; } catch (e) {}
+  return '<details class="ayuda"' + (cerrado ? '' : ' open') + ' ontoggle="try{localStorage.setItem(\'ferre_ayuda_' + k + '\',this.open?\'1\':\'0\')}catch(e){}"><summary>❓ ' + a[0] + '</summary><div class="ay-b">' + a[1] + '</div></details>';
+}
+const main = h => { $('#main').innerHTML = (typeof loadingHtml !== 'undefined' && h === loadingHtml ? '' : ayudaHtml()) + h; window.scrollTo(0, 0); };
 const loadingHtml = '<div class="vacio">Cargando…</div>';
 
 /* ===================== API ===================== */
@@ -877,25 +909,48 @@ function prRender() {
 }
 
 /* ---------- Ajuste masivo ---------- */
+const MS = { rows: [], sel: new Set(), total: 0, t: null };
 function prMasivoUI() {
-  $('#pr-body').innerHTML = '<div class="alert a-info">Sube o baja <b>de una vez</b> el costo y los 3 precios de venta de un grupo de artículos. Útil cuando el proveedor avisa un aumento general antes de mandarte la lista nueva. Siempre podés <b>deshacerlo</b> desde el historial.</div>' +
-    '<div class="fgrid"><div class="fg"><label>Proveedor</label><select id="m-prov">' + optsProv(PR.prov, 'Todos los proveedores') + '</select></div><div class="fg"><label>Categoría</label><select id="m-cat">' + optsCat('', 'Todas las categorías') + '</select></div><div class="fg"><label>Marca (opcional)</label><input id="m-mar" placeholder="Ej.: Stanley"></div><div class="fg"><label>Porcentaje (negativo = baja)</label><input id="m-pct" type="number" step="0.1" placeholder="Ej.: 12.5"></div></div>' +
-    '<div class="brow"><button class="btn l" onclick="prMasivoCount()">Ver cuántos artículos afecta</button><button class="btn o" id="m-ok" onclick="prMasivoApply()">Aplicar ajuste</button></div><div id="m-info"></div>';
+  MS.rows = []; MS.sel = new Set(); MS.total = 0;
+  $('#pr-body').innerHTML = '<div class="alert a-info">Sube o baja <b>de una vez</b> el costo y los 3 precios de venta de los artículos que <b>tildes</b>. Filtrá por proveedor, categoría, marca o buscá por nombre; después destildá los que no quieras tocar. Siempre podés <b>deshacerlo</b> desde el historial.</div>' +
+    '<div class="fgrid"><div class="fg"><label>Proveedor</label><select id="m-prov" onchange="prMasivoLoad()">' + optsProv(PR.prov, 'Todos los proveedores') + '</select></div><div class="fg"><label>Categoría</label><select id="m-cat" onchange="prMasivoLoad()">' + optsCat('', 'Todas las categorías') + '</select></div><div class="fg"><label>Marca (opcional)</label><input id="m-mar" placeholder="Ej.: Stanley" oninput="prMasivoDeb()"></div><div class="fg"><label>Buscar por nombre o código</label><input id="m-bus" placeholder="Ej.: tornillo" oninput="prMasivoDeb()"></div><div class="fg"><label>Porcentaje (negativo = baja)</label><input id="m-pct" type="number" step="0.1" placeholder="Ej.: 12.5" oninput="prMasivoPrev()"></div></div>' +
+    '<div class="brow"><button class="btn l sm" onclick="prMasivoAll(true)">Marcar todos los que se ven</button><button class="btn l sm" onclick="prMasivoAll(false)">Desmarcar todos</button><span class="sp"></span><span class="hint" id="m-cnt"></span></div>' +
+    '<div id="m-lista"></div><div class="mfoot"><button class="btn o big" id="m-ok" onclick="prMasivoApply()">Aplicar ajuste a los tildados</button></div><div id="m-info"></div>';
+  prMasivoLoad();
 }
+function prMasivoDeb() { clearTimeout(MS.t); MS.t = setTimeout(prMasivoLoad, 350); }
 function prMasivoQuery() {
-  let p = 'articulos?select=id&activo=eq.true&limit=1';
-  if (val('m-prov')) p += '&proveedor_id=eq.' + val('m-prov'); if (val('m-cat')) p += '&categoria_id=eq.' + val('m-cat'); const m = sanit(val('m-mar')); if (m) p += '&marca=eq.' + q(m);
-  return p;
+  let p = 'articulos?select=id,codigo,descripcion,costo,marca&activo=eq.true&order=descripcion.asc&limit=1000';
+  if (val('m-prov')) p += '&proveedor_id=eq.' + val('m-prov'); if (val('m-cat')) p += '&categoria_id=eq.' + val('m-cat'); const m = sanit(val('m-mar')); if (m) p += '&marca=ilike.*' + q(m) + '*';
+  return p + artFilter(val('m-bus'));
 }
-async function prMasivoCount() { try { const r = await api(prMasivoQuery(), { count: true, range: '0-0' }); $('#m-info').innerHTML = '<div class="alert a-ok">Se modificarían <b>' + (r.total == null ? '?' : r.total) + ' artículos</b>.</div>'; } catch (e) { toast(e.message, 'err'); } }
+async function prMasivoLoad() {
+  const box = $('#m-lista'); if (!box) return; box.innerHTML = '<div class="vacio">Buscando…</div>';
+  try {
+    const rows = await api(prMasivoQuery()); if (!$('#m-lista')) return;
+    MS.rows = rows; MS.sel = new Set(rows.map(r => r.id)); prMasivoDraw();
+  } catch (e) { box.innerHTML = '<div class="alert a-bad">' + esc(e.message) + '</div>'; }
+}
+function prMasivoPct() { const v = parseFloat(val('m-pct')); return isFinite(v) ? v : 0; }
+function prMasivoDraw() {
+  const pct = prMasivoPct();
+  $('#m-lista').innerHTML = MS.rows.length ? '<div class="twrap" style="max-height:50vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n" id="m-th">' + (pct ? 'Costo nuevo' : '') + '</th></tr></thead><tbody>' +
+    MS.rows.map((r, i) => '<tr><td><input type="checkbox" ' + (MS.sel.has(r.id) ? 'checked' : '') + ' onchange="prMasivoTog(' + i + ',this.checked)"></td><td>' + esc(r.codigo) + '</td><td>' + esc(r.descripcion) + (r.marca ? ' <small style="color:#888">' + esc(r.marca) + '</small>' : '') + '</td><td class="n">' + money(r.costo) + '</td><td class="n" id="m-n' + i + '"><b>' + (pct ? money(r2(r.costo * (1 + pct / 100))) : '') + '</b></td></tr>').join('') + '</tbody></table></div>' + (MS.rows.length >= 1000 ? '<div class="hint">Se muestran los primeros 1000. Afiná los filtros para ver el resto.</div>' : '') : '<div class="vacio">No hay artículos con ese filtro.</div>';
+  prMasivoCnt();
+}
+function prMasivoPrev() { const pct = prMasivoPct(); MS.rows.forEach((r, i) => { const e = $('#m-n' + i); if (e) e.innerHTML = '<b>' + (pct ? money(r2(r.costo * (1 + pct / 100))) : '') + '</b>'; }); const th = $('#m-th'); if (th) th.textContent = pct ? 'Costo nuevo' : ''; }
+function prMasivoTog(i, v) { const r = MS.rows[i]; if (v) MS.sel.add(r.id); else MS.sel.delete(r.id); prMasivoCnt(); }
+function prMasivoAll(v) { MS.sel = v ? new Set(MS.rows.map(r => r.id)) : new Set(); prMasivoDraw(); }
+function prMasivoCnt() { const e = $('#m-cnt'); if (e) e.textContent = MS.sel.size + ' de ' + MS.rows.length + ' artículos tildados'; }
 async function prMasivoApply() {
   const pct = parseFloat(val('m-pct')); if (!pct || pct <= -90 || pct > 500) return toast('Ingresá un porcentaje válido (entre -90 y 500)', 'err');
-  let total; try { total = (await api(prMasivoQuery(), { count: true, range: '0-0' })).total; } catch (e) { return toast(e.message, 'err'); }
-  if (!total) return toast('Ese filtro no incluye ningún artículo', 'err');
-  if (!await ask('Vas a ' + (pct > 0 ? 'subir' : 'bajar') + ' un ' + Math.abs(pct) + '% el costo y los precios de ' + total + ' artículos.\nPodés deshacerlo desde el historial.', 'Aplicar ajuste')) return;
+  const items = MS.rows.filter(r => MS.sel.has(r.id) && +r.costo > 0).map(r => ({ articulo_id: r.id, codigo: r.codigo, descripcion: r.descripcion, precio_nuevo: r2(r.costo * (1 + pct / 100)) }));
+  if (!items.length) return toast('No hay artículos tildados (o no tienen costo cargado)', 'err');
+  if (!await ask('Vas a ' + (pct > 0 ? 'subir' : 'bajar') + ' un ' + Math.abs(pct) + '% el costo y los precios de ' + items.length + ' artículos.\nPodés deshacerlo desde el historial.', 'Aplicar ajuste')) return;
   await busy($('#m-ok'), async () => {
-    const r = await rpc('aumento_masivo', { p_proveedor: val('m-prov') || null, p_categoria: val('m-cat') || null, p_pct: pct, p_marca: sanit(val('m-mar')) || null });
+    const r = await rpc('aplicar_lista', { p_proveedor: val('m-prov') || null, p_archivo: 'Ajuste ' + (pct > 0 ? '+' : '') + pct + '%', p_formato: 'masivo', p_items: items });
     $('#m-info').innerHTML = '<div class="alert a-ok">✅ Listo: se actualizaron <b>' + r.actualizados + ' artículos</b>. <button class="btn l sm" onclick="PR.tab=\'hist\';prRender()">Ver historial / deshacer</button></div>';
+    prMasivoLoad();
   });
 }
 
@@ -918,9 +973,9 @@ function prListaUI() {
   const prov = S.provs.find(p => p.id === PR.prov);
   $('#pr-body').innerHTML = '<div class="alert a-info">Subí la lista que te mandó el proveedor (<b>Excel, CSV o PDF</b>). El sistema la lee, busca cada artículo por código y te muestra cuánto sube o baja antes de aplicar nada.</div>' +
     '<div class="fgrid"><div class="fg"><label>1. Proveedor *</label><select id="l-prov" onchange="prProv(this.value)">' + optsProv(PR.prov, '— Elegí un proveedor —') + '</select></div>' +
-    '<div class="fg"><label>Descuento sobre su lista %</label><input id="l-desc" type="number" step="0.01" min="0" max="99" value="' + PR.desc + '" onchange="PR.desc=parseFloat(this.value)||0;prMatch()"></div>' +
-    '<div class="fg" style="justify-content:end"><label style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px"><input type="checkbox" id="l-iva"' + (PR.iva ? ' checked' : '') + ' onchange="PR.iva=this.checked;prMatch()"> Los precios de la lista ya incluyen IVA</label></div></div>' +
-    '<div class="dz" id="l-dz"><div style="font-size:34px">📄</div><b>2. Arrastrá la lista acá o hacé clic para elegirla</b><div class="hint">Excel (.xlsx, .xls), CSV o PDF' + (PR.fname ? ' · Cargada: <b>' + esc(PR.fname) + '</b>' : '') + '</div></div><input type="file" id="l-file" accept=".xlsx,.xls,.csv,.pdf,.txt" class="hidden">' +
+    '<div class="fg"><label>2. Descuento sobre su lista %</label><input id="l-desc" type="number" step="0.01" min="0" max="99" value="' + PR.desc + '" onchange="PR.desc=parseFloat(this.value)||0;prMatch()"><div class="fhint">Lo que te descuenta el proveedor. <b>0</b> si no te hace ninguno.</div></div>' +
+    '<div class="fg" style="justify-content:end"><label style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px"><input type="checkbox" id="l-iva"' + (PR.iva ? ' checked' : '') + ' onchange="PR.iva=this.checked;prMatch()"> Los precios de la lista ya incluyen IVA</label><div class="fhint">Tildala <b>solo si</b> el PDF trae el IVA incluido: el sistema se lo saca para guardar el costo neto. Si el proveedor factura “precio + IVA”, dejala <b>sin tildar</b>.</div></div></div>' +
+    '<div class="dz" id="l-dz"><div style="font-size:34px">📄</div><b>3. Arrastrá la lista acá o hacé clic para elegirla</b><div class="hint">Excel (.xlsx, .xls), CSV o PDF' + (PR.fname ? ' · Cargada: <b>' + esc(PR.fname) + '</b>' : '') + '</div></div><input type="file" id="l-file" accept=".xlsx,.xls,.csv,.pdf,.txt" class="hidden">' +
     '<div id="l-map"></div><div id="l-prev"></div>';
   const dz = $('#l-dz'), fi = $('#l-file');
   dz.onclick = () => { if (!PR.prov) return toast('Primero elegí el proveedor', 'err'); fi.click(); };
@@ -1385,7 +1440,7 @@ function prMapUI() {
   const tabla = '<div class="twrap" style="max-height:260px;overflow:auto;margin-top:10px"><table><thead><tr><th style="color:#888">#</th>' + cols.map(i => '<th style="' + color(i) + '">' + colLetter(i) + (rol(i) ? '<br><small>' + rol(i) + '</small>' : '') + '</th>').join('') + '</tr></thead><tbody>' +
     filas.map((f, k) => '<tr' + (PR.hdr >= 0 && k === 0 ? ' style="background:#f3f0ec;font-weight:600"' : '') + '><td style="color:#888">' + (ini + k + 1) + '</td>' + cols.map(i => '<td' + (rol(i) ? ' style="background:#fffaf5"' : '') + '>' + esc(prCel((f || [])[i]).slice(0, 38)) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
   const esPdf = PR.fmt === 'pdf' && PR.lects;
-  el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Elegí las columnas</div>' +
+  el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">4. Elegí las columnas</div>' +
     '<div class="hint" style="margin-bottom:8px">Mirá la tabla de abajo (así se leyó tu archivo) y marcá qué columna es el código, la descripción y el precio. Se recuerda para este proveedor.</div><div class="fgrid">' +
     (esPdf && PR.lects.length > 1 ? '<div class="fg"><label>Cómo se leyó el PDF</label><select onchange="prLect(this.value)">' + PR.lects.map((l, i) => '<option value="' + i + '"' + (i === PR.lect ? ' selected' : '') + '>' + esc(l.nombre) + '</option>').join('') + '</select></div>' : '') +
     (PR.sheets && PR.sheets.SheetNames.length > 1 ? '<div class="fg"><label>Hoja</label><select onchange="PR.sheet=this.value;prSheet();prMapUI();prMatch()">' + PR.sheets.SheetNames.map(n => '<option' + (n === PR.sheet ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '') +
@@ -1479,7 +1534,7 @@ function prPrev() {
   const mostrar = list.slice(0, 400);
   const badge = r => r.art ? '' : ' <span class="badge b-warn">' + (r.estado === 'dudoso' ? 'para confirmar' : r.estado === 'ignorado' ? 'ignorado' : 'nuevo') + '</span>';
   const acc = (r, i) => { if (r.art || r.estado === 'dudoso') return ''; const cd = r.res && r.res.candidatos && r.res.candidatos[0]; return (cd && cd.score >= 0.4 ? '<button class="btn l sm" title="' + esc(cd.nombre) + '" onclick="prVincSug(' + i + ')">¿Es «' + esc(cd.nombre.slice(0, 24)) + '»?</button> ' : '') + '<button class="btn l sm" onclick="prBuscar(' + i + ')">🔍 Vincular</button>'; };
-  $('#l-prev').innerHTML = prDudHtml() + '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">4. Revisá los cambios antes de aplicar</div>' +
+  $('#l-prev').innerHTML = prDudHtml() + '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">5. Revisá los cambios antes de aplicar</div>' +
     '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div>' + (c.dudoso ? '<div class="scard"><div class="slbl">Para confirmar</div><div class="snum">' + c.dudoso + '</div></div>' : '') + '<div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
     (PR.rows.some(r => r.dup) ? '<div class="alert a-warn">Dos filas de la lista apuntan al mismo artículo. Se aplica el último precio de ese artículo.</div>' : '') +
     '<div class="brow"><select onchange="PR.filtro=this.value;prPrev()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['dudoso', 'Para confirmar'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><button class="btn l sm" onclick="prSelAll(true)">Marcar todos los que cambian</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button><span class="sp"></span><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="l-crear"' + (PR.crear ? ' checked' : '') + ' onchange="PR.crear=this.checked"> Crear también los que no están (' + c.crear + ')</label></div>' +
