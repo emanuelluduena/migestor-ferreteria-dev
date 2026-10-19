@@ -261,7 +261,7 @@ const AYUDA = {
   inicio: ['👋 ¿Qué ves en el Inicio?', '<ul><li>Un <b>resumen de hoy</b>: ventas, caja y cuentas por cobrar.</li><li>Desde el menú de la izquierda entrás a cada parte del sistema.</li><li>Si recién empezás: cargá <b>Proveedores</b> y <b>Artículos</b> (o subí una lista en <b>Precios</b>), y después ya podés vender y presupuestar.</li></ul>'],
   ventas: ['🧾 Cómo vender', '<ol><li>Abrí el <b>turno de caja</b> (menú <b>Caja</b>) si todavía no lo hiciste.</li><li>Buscá los artículos por código o nombre y agregalos al carrito.</li><li>Elegí el cliente (opcional) y la forma de pago.</li><li>Confirmá la venta. El stock se descuenta solo.</li></ol><div class="ay-t">Cuenta corriente</div>Si elegís <b>cuenta corriente</b>, la venta queda como deuda en la ficha del cliente, para cobrarla después.'],
   presupuestos: ['📋 Cómo hacer un presupuesto', '<ol><li>Elegí el cliente y agregá los artículos que te pidió.</li><li>Guardalo. Queda numerado, con la leyenda de <b>presupuesto</b> (no es factura).</li><li>Enviáselo por <b>WhatsApp</b> o por <b>mail</b>: se abre la aplicación con el texto ya armado.</li><li>Si el cliente acepta, usá <b>Vender presupuesto</b>: se registra la venta y se descuenta el stock.</li></ol>'],
-  articulos: ['🔩 Tus artículos', '<ul><li>Acá está todo lo que vendés, con su <b>costo</b> y sus <b>3 precios de venta</b>.</li><li>El <b>costo</b> es lo que te cuesta a vos. Los precios de venta se calculan sumándole tu <b>margen</b>.</li><li>No hace falta cargar uno por uno: en <b>Precios → Cargar lista de proveedor</b> podés crear todos los artículos de una lista de una vez.</li><li>Para cambiar precios de muchos a la vez usá <b>Precios</b>, no los edites a mano.</li></ul>'],
+  articulos: ['🔩 Tus artículos', '<ul><li>Acá está todo lo que vendés, con su <b>costo</b> y sus <b>3 precios de venta</b>.</li><li>El <b>costo</b> es lo que te cuesta a vos. Los precios de venta se calculan sumándole tu <b>margen</b>.</li><li>No hace falta cargar uno por uno: en <b>Precios → Cargar lista de proveedor</b> podés crear todos los artículos de una lista de una vez.</li><li><b>Filtrá</b> por texto, categoría, proveedor, marca o stock, y <b>tildá</b> los casilleros: aparece una barra para <b>ajustar precios, cambiar margen, categoría o proveedor</b> o dar de baja a todos los tildados juntos.</li><li>Para pasar un aumento de una lista del proveedor usá <b>Precios</b>.</li></ul>'],
   clientes: ['👷 Clientes y cuentas corrientes', '<ul><li>Cada cliente tiene su ficha con el <b>saldo</b> que te debe.</li><li>Las ventas en <b>cuenta corriente</b> suman a ese saldo.</li><li>Cuando te paga, entrá a la ficha y tocá <b>Registrar pago</b>: el saldo baja y el cobro entra en la caja.</li></ul>'],
   proveedores: ['🚚 Proveedores', '<ul><li>Cargá acá a quienes te venden mercadería.</li><li>El campo <b>descuento base</b> es el descuento que te hace ese proveedor sobre su lista. Se usa solo cuando cargás una lista en <b>Precios</b>.</li><li>Cada artículo queda vinculado a su proveedor, así la próxima lista se actualiza sola.</li></ul>'],
   'precios-lista': ['📄 Cómo cargar una lista de proveedor (paso a paso)', '<ol><li><b>Elegí el proveedor.</b> Si es la primera vez, es normal que no tenga artículos cargados.</li><li><b>Descuento:</b> poné el % que te hace sobre su lista (0 si ninguno).</li><li><b>IVA:</b> tildá la casilla <u>solo si</u> los precios del PDF ya traen el IVA incluido. Si el proveedor te factura “precio + IVA”, dejala sin tildar.</li><li><b>Subí el archivo</b> (PDF, Excel o CSV).</li><li><b>Elegí las columnas:</b> mirá la tabla y marcá cuál es la descripción y cuál el precio (el código es opcional).</li><li><b>Revisá los cambios:</b> verde = baja, rojo = sube. Se aplican solo los <b>tildados</b>.</li><li>Tocá <b>Aplicar</b>. Siempre podés <b>deshacer</b> desde “Historial y deshacer”.</li></ol>' +
@@ -443,42 +443,108 @@ R.inicio = async () => {
 };
 
 /* ===================== ARTÍCULOS ===================== */
-const A = { q: '', cat: '', prov: '', low: false, page: 0, per: 50 };
+const A = { q: '', cat: '', prov: '', mar: '', stk: '', sincat: false, page: 0, per: 50, sel: new Map(), rows: [], tot: 0 };
 R.articulos = async arg => {
-  if (arg && arg.low) { A.low = true; A.q = ''; A.cat = ''; A.prov = ''; A.page = 0; }
+  if (arg && arg.low) { A.stk = 'bajo'; A.q = ''; A.cat = ''; A.prov = ''; A.mar = ''; A.sincat = false; A.page = 0; }
   main('<div class="panel"><div class="ptit">🔩 Artículos <span class="sp"></span><button class="btn o" onclick="artEdit()">+ Nuevo artículo</button></div>' +
     '<div class="brow"><div class="srch">🔎<input id="a-q" placeholder="Buscar por código, descripción, marca o código de barras" value="' + esc(A.q) + '"></div>' +
     '<select id="a-cat" style="max-width:200px">' + optsCat(A.cat, 'Todas las categorías') + '</select>' +
-    '<select id="a-prov" style="max-width:220px">' + optsProv(A.prov, 'Todos los proveedores') + '</select>' +
-    '<label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="a-low"' + (A.low ? ' checked' : '') + '> Solo stock bajo</label></div>' +
-    '<div id="a-list">' + loadingHtml + '</div></div>');
-  const re = () => { A.q = val('a-q'); A.cat = val('a-cat'); A.prov = val('a-prov'); A.low = $('#a-low').checked; A.page = 0; artLoad(); };
-  $('#a-q').addEventListener('input', debounce(re, 300));
-  ['a-cat', 'a-prov', 'a-low'].forEach(id => $('#' + id).addEventListener('change', re));
-  artLoad();
+    '<select id="a-prov" style="max-width:220px">' + optsProv(A.prov, 'Todos los proveedores') + '</select></div>' +
+    '<div class="brow"><input id="a-mar" placeholder="Marca" style="max-width:160px" value="' + esc(A.mar) + '">' +
+    '<select id="a-stk" style="max-width:190px">' + [['', 'Todo el stock'], ['sin', 'Sin stock (0)'], ['con', 'Con stock'], ['bajo', 'Stock bajo']].map(o => '<option value="' + o[0] + '"' + (A.stk === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
+    '<label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="a-sc"' + (A.sincat ? ' checked' : '') + '> Sin categoría</label>' +
+    '<button class="btn l sm" onclick="artLimpiar()">Limpiar filtros</button></div>' +
+    '<div id="a-bar"></div><div id="a-list">' + loadingHtml + '</div></div>');
+  const re = () => { A.q = val('a-q'); A.cat = val('a-cat'); A.prov = val('a-prov'); A.mar = val('a-mar').trim(); A.stk = val('a-stk'); A.sincat = $('#a-sc').checked; A.page = 0; artLoad(); };
+  $('#a-q').addEventListener('input', debounce(re, 300)); $('#a-mar').addEventListener('input', debounce(re, 300));
+  ['a-cat', 'a-prov', 'a-stk', 'a-sc'].forEach(id => $('#' + id).addEventListener('change', re));
+  artBar(); artLoad();
 };
+function artLimpiar() { A.q = ''; A.cat = ''; A.prov = ''; A.mar = ''; A.stk = ''; A.sincat = false; A.page = 0; R.articulos(); }
 function artFilter(term) {
   const words = sanit(term).split(' ').filter(Boolean).slice(0, 5);
   if (!words.length) return '';
   return '&and=(' + words.map(w => 'or(descripcion.ilike.*' + w + '*,codigo.ilike.*' + w + '*,marca.ilike.*' + w + '*,codigo_barras.ilike.*' + w + '*)').join(',') + ')';
 }
+function artQuery(sel) {
+  let p = 'articulos?select=' + sel + '&activo=eq.true&order=descripcion.asc' + artFilter(A.q);
+  if (A.cat) p += '&categoria_id=eq.' + A.cat;
+  if (A.sincat) p += '&categoria_id=is.null';
+  if (A.prov) p += '&proveedor_id=eq.' + A.prov;
+  if (A.mar) { const m = sanit(A.mar); if (m) p += '&marca=ilike.*' + q(m) + '*'; }
+  if (A.stk === 'bajo') p += '&stock_bajo=eq.true'; else if (A.stk === 'sin') p += '&stock=lte.0'; else if (A.stk === 'con') p += '&stock=gt.0';
+  return p;
+}
 async function artLoad() {
   if (!$('#a-list')) return;
-  let p = 'articulos?select=*&activo=eq.true&order=descripcion.asc' + artFilter(A.q);
-  if (A.cat) p += '&categoria_id=eq.' + A.cat;
-  if (A.prov) p += '&proveedor_id=eq.' + A.prov;
-  if (A.low) p += '&stock_bajo=eq.true';
   const from = A.page * A.per;
   let res;
-  try { res = await api(p, { count: true, range: from + '-' + (from + A.per - 1) }); } catch (e) { put('#a-list', '<div class="alert a-bad">' + esc(e.message) + '</div>'); return; }
-  const rows = res.data || [], tot = res.total;
+  try { res = await api(artQuery('*'), { count: true, range: from + '-' + (from + A.per - 1) }); } catch (e) { put('#a-list', '<div class="alert a-bad">' + esc(e.message) + '</div>'); return; }
+  const rows = res.data || [], tot = res.total; A.rows = rows; A.tot = tot == null ? rows.length : tot;
+  const todos = rows.length && rows.every(a => A.sel.has(a.id));
   put('#a-list', rows.length ?
-    '<div class="twrap"><table><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th class="n">Stock</th><th class="n">Costo</th><th class="n">' + esc(lista(1)) + '</th><th class="n">' + esc(lista(2)) + '</th><th class="n">' + esc(lista(3)) + '</th><th></th></tr></thead><tbody>' +
-    rows.map(a => '<tr><td><b>' + esc(a.codigo) + '</b></td><td>' + esc(a.descripcion) + (a.marca ? ' <span class="hint">· ' + esc(a.marca) + '</span>' : '') + '</td><td>' + esc(catNom(a.categoria_id)) + '</td>' +
+    '<div class="twrap"><table><thead><tr><th style="width:34px"><input type="checkbox" id="a-all" title="Tildar / destildar los de esta página" ' + (todos ? 'checked' : '') + ' onchange="artTogPag(this.checked)"></th><th>Código</th><th>Descripción</th><th>Categoría</th><th class="n">Stock</th><th class="n">Costo</th><th class="n">' + esc(lista(1)) + '</th><th class="n">' + esc(lista(2)) + '</th><th class="n">' + esc(lista(3)) + '</th><th></th></tr></thead><tbody>' +
+    rows.map(a => '<tr><td><input type="checkbox" ' + (A.sel.has(a.id) ? 'checked' : '') + ' onchange="artTog(\'' + a.id + '\',this.checked)"></td><td><b>' + esc(a.codigo) + '</b></td><td>' + esc(a.descripcion) + (a.marca ? ' <span class="hint">· ' + esc(a.marca) + '</span>' : '') + '</td><td>' + esc(catNom(a.categoria_id)) + '</td>' +
       '<td class="n">' + (a.stock_bajo ? '<span class="badge b-bad">' + fnum(a.stock) + '</span>' : fnum(a.stock)) + ' <span class="hint">' + esc(a.unidad) + '</span></td><td class="n">' + money(a.costo) + '</td><td class="n"><b>' + money(a.precio1) + '</b></td><td class="n">' + money(a.precio2) + '</td><td class="n">' + money(a.precio3) + '</td>' +
       '<td><button class="btn l sm" onclick="artEdit(\'' + a.id + '\')">Editar</button></td></tr>').join('') + '</tbody></table></div>' +
     '<div class="pager"><span>' + (tot != null ? (from + 1) + '–' + (from + rows.length) + ' de ' + tot : rows.length + ' artículos') + '</span><button class="btn l sm" ' + (A.page ? '' : 'disabled') + ' onclick="A.page--;artLoad()">← Anterior</button><button class="btn l sm" ' + ((tot != null && from + rows.length >= tot) || rows.length < A.per ? 'disabled' : '') + ' onclick="A.page++;artLoad()">Siguiente →</button></div>'
     : '<div class="vacio">No hay artículos con ese filtro.</div>');
+  artBar();
+}
+/* ---- selección y acciones sobre varios artículos ---- */
+function artTog(id, v) { if (v) { const r = A.rows.find(x => x.id === id); A.sel.set(id, r ? r.descripcion : ''); } else A.sel.delete(id); artBar(); const c = $('#a-all'); if (c) c.checked = A.rows.length && A.rows.every(x => A.sel.has(x.id)); }
+function artTogPag(v) { A.rows.forEach(r => { if (v) A.sel.set(r.id, r.descripcion); else A.sel.delete(r.id); }); artLoad(); }
+function artSelNada() { A.sel = new Map(); artLoad(); }
+async function artSelTodos() {
+  try {
+    const r = await api(artQuery('id,descripcion').replace('&order=descripcion.asc', '') + '&limit=3000');
+    r.forEach(x => A.sel.set(x.id, x.descripcion)); if (r.length >= 3000) toast('Se tildaron los primeros 3000. Afiná los filtros para el resto.', 'err'); artLoad();
+  } catch (e) { toast(e.message, 'err'); }
+}
+function artBar() {
+  const el = $('#a-bar'); if (!el) return; const n = A.sel.size;
+  if (!n) { el.innerHTML = A.tot > A.rows.length ? '<div class="hint" style="margin:-4px 0 8px">Tildá los casilleros para modificar varios artículos juntos.</div>' : ''; return; }
+  el.innerHTML = '<div class="alert a-info" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>' + n + ' seleccionado' + (n === 1 ? '' : 's') + '</b>' +
+    (A.tot > A.rows.length && n < A.tot ? '<button class="btn l sm" onclick="artSelTodos()">Tildar los ' + A.tot + ' que coinciden con el filtro</button>' : '') +
+    '<span class="sp"></span><button class="btn l sm" onclick="artBulkPct()">📈 Ajustar precios %</button><button class="btn l sm" onclick="artBulkMargen()">Cambiar margen</button><button class="btn l sm" onclick="artBulkCampo(\'categoria_id\')">Cambiar categoría</button><button class="btn l sm" onclick="artBulkCampo(\'proveedor_id\')">Cambiar proveedor</button><button class="btn l sm" onclick="artBulkBaja()">Dar de baja</button><button class="btn l sm" onclick="artSelNada()">Quitar selección</button></div>';
+}
+async function artPorLotes(ids, fn, tam) { tam = tam || 100; for (let i = 0; i < ids.length; i += tam) await fn(ids.slice(i, i + tam)); }
+const artIn = ids => 'articulos?id=in.(' + ids.join(',') + ')';
+function artBulkCampo(campo) {
+  const esCat = campo === 'categoria_id';
+  modal('<h2>Cambiar ' + (esCat ? 'categoría' : 'proveedor') + '</h2><div class="alert a-info">Se aplica a los <b>' + A.sel.size + '</b> artículos seleccionados.</div><div class="fg"><label>' + (esCat ? 'Categoría' : 'Proveedor') + ' nuevo</label><select id="bk-v">' + (esCat ? optsCat('') : optsProv('')) + '</select></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="bk-ok">Aplicar</button></div>');
+  $('#bk-ok').onclick = () => busy($('#bk-ok'), async () => {
+    const v = val('bk-v') || null; const ids = [...A.sel.keys()];
+    await artPorLotes(ids, l => api(artIn(l), { method: 'PATCH', body: { [campo]: v } }));
+    closeModal(); toast(ids.length + ' artículos actualizados', 'ok'); artLoad();
+  });
+}
+async function artBulkBaja() {
+  if (!await ask('Vas a dar de baja ' + A.sel.size + ' artículos. Dejan de aparecer en el sistema (no se borran las ventas anteriores).', 'Dar de baja', true)) return;
+  try { const ids = [...A.sel.keys()]; await artPorLotes(ids, l => api(artIn(l), { method: 'PATCH', body: { activo: false } })); A.sel = new Map(); toast(ids.length + ' artículos dados de baja', 'ok'); artLoad(); } catch (e) { toast(e.message, 'err'); }
+}
+async function artSelFilas() { const out = []; await artPorLotes([...A.sel.keys()], async l => { out.push(...await api('articulos?select=id,codigo,descripcion,costo,precio1,precio2,precio3,margen_pct&id=in.(' + l.join(',') + ')')); }, 80); return out; }
+function artBulkPct() {
+  modal('<h2>Ajustar precios de los seleccionados</h2><div class="alert a-info">Sube o baja el <b>costo y los 3 precios de venta</b> de los <b>' + A.sel.size + '</b> artículos tildados. Después podés <b>deshacerlo</b> desde Precios → Historial.</div><div class="fg"><label>Porcentaje (negativo = baja)</label><input id="bk-p" type="number" step="0.1" placeholder="Ej.: 12.5"></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="bk-ok">Aplicar</button></div>');
+  $('#bk-ok').onclick = () => busy($('#bk-ok'), async () => {
+    const pct = parseFloat(val('bk-p')); if (!pct || pct <= -90 || pct > 500) return toast('Ingresá un porcentaje válido (entre -90 y 500)', 'err');
+    const filas = (await artSelFilas()).filter(r => +r.costo > 0);
+    if (!filas.length) return toast('Los artículos seleccionados no tienen costo cargado', 'err');
+    const r = await rpc('aplicar_lista', { p_proveedor: null, p_archivo: 'Ajuste ' + (pct > 0 ? '+' : '') + pct + '% (artículos tildados)', p_formato: 'masivo', p_items: filas.map(x => ({ articulo_id: x.id, codigo: x.codigo, descripcion: x.descripcion, precio_nuevo: r2(x.costo * (1 + pct / 100)) })) });
+    closeModal(); toast(r.actualizados + ' artículos actualizados', 'ok'); artLoad();
+  });
+}
+function artBulkMargen() {
+  modal('<h2>Cambiar margen de los seleccionados</h2><div class="alert a-info">Recalcula el <b>precio de venta</b> de los <b>' + A.sel.size + '</b> artículos sobre su costo actual (el costo no cambia). Los otros dos precios se mueven en la misma proporción.</div><div class="fg"><label>Margen % sobre el costo</label><input id="bk-m" type="number" step="0.1" min="0" placeholder="Ej.: 35"></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="bk-ok">Aplicar</button></div>');
+  $('#bk-ok').onclick = () => busy($('#bk-ok'), async () => {
+    const m = parseFloat(val('bk-m')); if (!isFinite(m) || m < 0 || m > 1000) return toast('Ingresá un margen válido', 'err');
+    const filas = await artSelFilas(); let n = 0;
+    for (let i = 0; i < filas.length; i += 10) await Promise.all(filas.slice(i, i + 10).map(x => {
+      const p1 = Math.round(x.costo * (1 + m / 100)); const k = +x.precio1 > 0 ? p1 / x.precio1 : null;
+      n++; return api('articulos?id=eq.' + x.id, { method: 'PATCH', body: { margen_pct: m, precio1: p1, precio2: k ? Math.round(x.precio2 * k) : Math.round(x.costo * 1.2), precio3: k ? Math.round(x.precio3 * k) : Math.round(x.costo * 1.15) } });
+    }));
+    closeModal(); toast(n + ' artículos actualizados', 'ok'); artLoad();
+  });
 }
 const UNIDADES = ['un', 'm', 'm2', 'm3', 'kg', 'l', 'caja', 'bolsa', 'rollo', 'par', 'juego', 'barra', 'pack'];
 async function artEdit(id) {
