@@ -1431,7 +1431,7 @@ function prAplicarRes(init) {
   PR.rows.forEach(r => prRowCalc(r, init));
   const seen = {}; PR.rows.forEach(r => { if (r.art) { if (seen[r.art.id]) r.dup = true; seen[r.art.id] = true; } });
 }
-function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, dudoso: 0, ignorado: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (r.estado === 'nuevo' && r.codigo) c.crear++; }); return c; }
+function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, dudoso: 0, ignorado: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (r.estado === 'nuevo' && (r.codigo || r.descripcion)) c.crear++; }); return c; }
 /* ---- vincular a mano (los "dudosos" y los "nuevos" que en realidad ya tenés) ---- */
 function prVincular(i, cod) {
   const r = PR.rows[i]; if (!cod) return toast('Elegí un artículo o ignorá la fila', 'err');
@@ -1477,7 +1477,7 @@ function prPrev() {
   const c = prCounts(); const f = PR.filtro;
   const list = PR.rows.map((r, i) => ({ r, i })).filter(x => f === 'todos' || (f === 'cambian' && (x.r.estado === 'sube' || x.r.estado === 'baja')) || f === x.r.estado);
   const mostrar = list.slice(0, 400);
-  const badge = r => r.art ? '' : ' <span class="badge b-warn">' + (r.estado === 'dudoso' ? 'para confirmar' : r.estado === 'ignorado' ? 'ignorado' : (r.codigo ? 'nuevo' : 'sin código')) + '</span>';
+  const badge = r => r.art ? '' : ' <span class="badge b-warn">' + (r.estado === 'dudoso' ? 'para confirmar' : r.estado === 'ignorado' ? 'ignorado' : 'nuevo') + '</span>';
   const acc = (r, i) => { if (r.art || r.estado === 'dudoso') return ''; const cd = r.res && r.res.candidatos && r.res.candidatos[0]; return (cd && cd.score >= 0.4 ? '<button class="btn l sm" title="' + esc(cd.nombre) + '" onclick="prVincSug(' + i + ')">¿Es «' + esc(cd.nombre.slice(0, 24)) + '»?</button> ' : '') + '<button class="btn l sm" onclick="prBuscar(' + i + ')">🔍 Vincular</button>'; };
   $('#l-prev').innerHTML = prDudHtml() + '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">4. Revisá los cambios antes de aplicar</div>' +
     '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div>' + (c.dudoso ? '<div class="scard"><div class="slbl">Para confirmar</div><div class="snum">' + c.dudoso + '</div></div>' : '') + '<div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
@@ -1489,8 +1489,10 @@ function prPrev() {
 }
 function prCnt() { const c = prCounts(), e = $('#l-cnt'); if (e) e.textContent = c.sel + ' artículo(s) marcado(s) para actualizar'; }
 function prSelAll(v) { PR.rows.forEach(r => { if (r.art && (r.estado === 'sube' || r.estado === 'baja')) r.sel = v; }); prPrev(); }
+/** Código automático y estable (mismo nombre → mismo código) para productos de listas sin códigos. */
+function prCodAuto(d) { const t = normDesc(d || ''); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return 'L' + h.toString(36).toUpperCase().padStart(7, '0'); }
 async function prApply() {
-  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => r.estado === 'nuevo' && r.codigo) : [];
+  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => r.estado === 'nuevo' && (r.codigo || r.descripcion)) : [];
   if (!sel.length && !crear.length) return toast('No hay nada marcado para aplicar', 'err');
   const last = {}; sel.forEach(r => { last[r.art.id] = r; }); const items = Object.values(last);
   if (!await ask('Vas a actualizar el costo y los precios de ' + items.length + ' artículos' + (crear.length ? ' y crear ' + crear.length + ' artículos nuevos' : '') + '.\nLos 3 precios de venta se ajustan en la misma proporción que el costo. Podés deshacerlo desde el historial.', 'Aplicar')) return;
@@ -1499,7 +1501,7 @@ async function prApply() {
     let creados = 0;
     if (crear.length) {
       const vistos = {}; const nuevos = crear.filter(x => { const k = normCode(x.codigo) || normDesc(x.descripcion); if (vistos[k]) return false; vistos[k] = 1; return true; });
-      const body = nuevos.map((x, n) => ({ negocio_id: S.neg.id, codigo: x.codigo || ('N-' + Date.now().toString(36) + n), descripcion: x.descripcion || x.codigo, proveedor_id: PR.prov, costo: x.nuevo, iva_pct: 21, margen_pct: 30, precio1: Math.round(x.nuevo * 1.3), precio2: Math.round(x.nuevo * 1.2), precio3: Math.round(x.nuevo * 1.15), stock: 0 }));
+      const body = nuevos.map((x, n) => ({ negocio_id: S.neg.id, codigo: x.codigo || prCodAuto(x.descripcion), descripcion: x.descripcion || x.codigo, proveedor_id: PR.prov, costo: x.nuevo, iva_pct: 21, margen_pct: 30, precio1: Math.round(x.nuevo * 1.3), precio2: Math.round(x.nuevo * 1.2), precio3: Math.round(x.nuevo * 1.15), stock: 0 }));
       for (let i = 0; i < body.length; i += 500) {
         const ins = await api('articulos?on_conflict=negocio_id,codigo', { method: 'POST', body: body.slice(i, i + 500), prefer: 'resolution=ignore-duplicates,return=representation' });
         creados += ins.length;
