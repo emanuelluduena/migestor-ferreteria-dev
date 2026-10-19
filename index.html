@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Gestor Ferretería — Sistema de gestión para ferreterías</title>
+<meta name="description" content="Ventas, presupuestos, cuentas corrientes y actualización de precios por lista de proveedor para ferreterías.">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1c1917;--steel:#2b3440;--steel2:#3b4756;--acc:#ea580c;--acc2:#fbbf24;--bg:#f4f3f1;--card:#fff;--line:#e5e2de;--mut:#6b7280;--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--warn:#a16207;--warnbg:#fef3c7;--info:#1d4ed8;--infobg:#dbeafe;--r:12px;--rs:8px;--sh:0 2px 10px rgba(28,25,23,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Barlow,system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.4}
+.hidden{display:none!important}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+h1,h2,h3,.cond{font-family:'Barlow Condensed',Barlow,sans-serif;letter-spacing:.2px}
+/* header */
+header.top{background:var(--steel);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 18px;height:58px;position:sticky;top:0;z-index:50;border-bottom:4px solid var(--acc)}
+.brand{display:flex;align-items:baseline;gap:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;white-space:nowrap}
+.brand b{color:var(--acc2)}
+.brand small{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#cbd5e1;font-weight:600}
+.hinfo{display:flex;align-items:center;gap:10px;font-size:13px;color:#e2e8f0;min-width:0}
+.hinfo .neg{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.pill.demo{background:var(--acc2);color:#422006}
+.pill.dev{background:#a5f3fc;color:#164e63}
+nav#nav{background:var(--steel);position:fixed;top:58px;left:0;bottom:0;width:208px;display:flex;flex-direction:column;gap:2px;padding:12px 8px;overflow-y:auto;z-index:45}
+.tab{border:0;background:none;cursor:pointer;padding:11px 14px;display:flex;flex-direction:row;align-items:center;gap:12px;font-weight:600;font-size:15px;color:#cbd5e1;border-left:4px solid transparent;border-radius:6px;text-align:left;width:100%}
+.tab .ti{font-size:19px;line-height:1;width:24px;text-align:center}
+.tab:hover{color:#fff;background:var(--steel2)}
+.tab.act{color:#fff;background:var(--steel2);border-left-color:var(--acc)}
+#hmenu{display:none;background:none;border:0;color:#fff;font-size:24px;cursor:pointer;padding:0 6px;line-height:1}
+#nbk{display:none}
+main#main{padding:20px;max-width:1500px;margin:0 0 0 208px}
+/* panels */
+.panel{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:16px}
+.ptit{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ptit .sp{flex:1}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.scard{background:var(--card);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);border-left:5px solid var(--steel2)}
+.scard.o{border-left-color:var(--acc)}.scard.g{border-left-color:var(--ok)}.scard.r{border-left-color:var(--bad)}.scard.y{border-left-color:var(--acc2)}
+.snum{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;line-height:1.1}
+.slbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.ssub{font-size:12px;color:var(--mut);margin-top:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* forms */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:12px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg.w2{grid-column:span 2}.fg.wf{grid-column:1/-1}
+.fg label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--steel2)}
+input,select,textarea{border:1.5px solid var(--line);border-radius:var(--rs);padding:8px 10px;background:#fff;outline:none;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(234,88,12,.15)}
+input[type=checkbox]{width:auto}
+textarea{resize:vertical;min-height:60px}
+.hint{font-size:12px;color:var(--mut)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 15px;border-radius:var(--rs);border:1.5px solid transparent;cursor:pointer;font-weight:600;background:var(--steel);color:#fff;white-space:nowrap;transition:filter .12s}
+.btn:hover{filter:brightness(1.12)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.o{background:var(--acc)}.btn.g{background:var(--ok)}.btn.r{background:var(--bad)}
+.btn.l{background:#fff;color:var(--ink);border-color:var(--line)}.btn.l:hover{background:#faf9f8;filter:none}
+.btn.sm{padding:4px 9px;font-size:12.5px}.btn.big{padding:12px 20px;font-size:17px}
+.brow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.brow .sp{flex:1}
+.srch{display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);border-radius:var(--rs);padding:0 10px;flex:1;min-width:200px;max-width:420px}
+.srch input{border:0;box-shadow:none!important;padding:8px 0}
+/* tables */
+.twrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--rs)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead th{background:var(--steel);color:#fff;text-align:left;padding:9px 11px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+tbody td{padding:8px 11px;border-top:1px solid #efece8;vertical-align:middle}
+tbody tr:hover{background:#faf8f6}
+tbody tr.click{cursor:pointer}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.c{text-align:center}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.b-ok{background:var(--okbg);color:var(--ok)}.b-bad{background:var(--badbg);color:var(--bad)}.b-warn{background:var(--warnbg);color:var(--warn)}.b-info{background:var(--infobg);color:var(--info)}.b-gray{background:#eceae7;color:#44403c}
+.pos{color:var(--ok);font-weight:700}.neg2{color:var(--bad);font-weight:700}
+.pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:10px;font-size:13px;color:var(--mut)}
+.vacio{text-align:center;padding:34px 16px;color:var(--mut)}
+.alert{padding:10px 14px;border-radius:var(--rs);margin-bottom:12px;font-size:14px}
+.a-info{background:var(--infobg);color:#1e3a8a}.a-warn{background:var(--warnbg);color:#78350f}.a-bad{background:var(--badbg);color:#7f1d1d}.a-ok{background:var(--okbg);color:#14532d}
+.tabs2{display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid var(--line)}
+.tabs2 button{background:none;border:0;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--mut);border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs2 button.act{color:var(--acc);border-bottom-color:var(--acc)}
+/* modal */
+.moverlay{position:fixed;inset:0;background:rgba(28,25,23,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto}
+.modal{position:relative;background:#fff;border-radius:var(--r);padding:22px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal.wide{max-width:980px}
+.mx{position:absolute;top:10px;right:12px;width:34px;height:34px;border:0;border-radius:50%;background:#f1f0ee;color:var(--ink);font-size:22px;line-height:1;cursor:pointer;z-index:2}.mx:hover{background:var(--badbg);color:var(--bad)}.modal h2{padding-right:36px}
+.modal h2{font-size:24px;margin-bottom:14px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap}
+#toast-root{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:90vw}
+.toast.err{background:var(--bad)}.toast.ok{background:var(--ok)}
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,var(--steel) 0%,#171c23 100%)}
+.lbox{background:#fff;border-radius:16px;padding:30px 28px;width:100%;max-width:400px;box-shadow:0 24px 70px rgba(0,0,0,.45);border-top:6px solid var(--acc)}
+.lbox h1{font-size:34px;line-height:1}.lbox h1 b{color:var(--acc)}
+.lbox .sub{color:var(--mut);margin:6px 0 18px}
+.lbox .fg{margin-bottom:12px}
+.lbox .or{text-align:center;color:var(--mut);font-size:13px;margin:12px 0}
+.lbox .btn{width:100%}
+.lerr{color:var(--bad);font-weight:600;font-size:14px;margin-bottom:10px}
+#loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600}
+/* POS */
+.pvl{display:grid;grid-template-columns:1fr 410px;gap:16px;align-items:start}
+.resl{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow-y:auto}
+.res{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 12px;border:1.5px solid var(--line);border-radius:var(--rs);background:#fff;cursor:pointer;text-align:left;width:100%}
+.res:hover{border-color:var(--acc);background:#fff8f3}
+.res .d{font-weight:600}.res .m{font-size:12px;color:var(--mut)}
+.res .p{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;white-space:nowrap}
+.ticket{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:16px;position:sticky;top:78px}
+.titems{max-height:36vh;overflow-y:auto;margin:10px 0}
+.tit{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 0;border-bottom:1px solid #efece8;font-size:14px}
+.tit .nm{font-weight:600}
+.tit .ctl{display:flex;gap:6px;align-items:center;grid-column:1/-1}
+.tit .ctl input{padding:4px 6px;text-align:right;width:84px}
+.tit .ctl input.q{width:70px}
+.tot{background:#f7f5f2;border-radius:var(--rs);padding:10px 12px;margin:10px 0}
+.trow{display:flex;justify-content:space-between;font-size:14px;padding:1px 0}
+.ttl{display:flex;justify-content:space-between;font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;border-top:2px solid var(--ink);margin-top:6px;padding-top:4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.seg button{flex:1;padding:8px 4px;border:1.5px solid var(--line);background:#fff;border-radius:var(--rs);font-weight:700;font-size:13px;cursor:pointer;min-width:74px}
+.seg button.act{background:var(--steel);color:#fff;border-color:var(--steel)}
+/* presupuesto editor */
+.ddwrap{position:relative}
+.dd{position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1.5px solid var(--acc);border-radius:var(--rs);box-shadow:0 10px 30px rgba(0,0,0,.2);max-height:300px;overflow-y:auto}
+.dd .res{border:0;border-radius:0;border-bottom:1px solid #efece8}
+.ed td input,.ed td select{padding:5px 7px}
+.ed td input.q{width:80px;text-align:right}.ed td input.p{width:110px;text-align:right}.ed td input.d{width:64px;text-align:right}
+.ed td select{width:78px}
+.dz{border:2.5px dashed #c9c3bb;border-radius:var(--r);padding:30px 16px;text-align:center;background:#fbfaf8;cursor:pointer}
+.dz:hover,.dz.over{border-color:var(--acc);background:#fff8f3}
+.dz b{font-size:18px}
+.up{color:var(--bad);font-weight:700}.dn{color:var(--ok);font-weight:700}.eq{color:var(--mut)}
+.flag{background:#fff7ed}
+@media(max-width:900px){.pvl{grid-template-columns:1fr}.ticket{position:static}.g2{grid-template-columns:1fr}.fg.w2{grid-column:auto}main#main{padding:12px;margin-left:0}#hmenu{display:block}nav#nav{transform:translateX(-100%);transition:transform .2s;width:240px;box-shadow:4px 0 16px rgba(0,0,0,.25)}#app.nav-open nav#nav{transform:none}#app.nav-open #nbk{display:block;position:fixed;inset:58px 0 0 0;background:rgba(0,0,0,.35);z-index:44}.hinfo .neg,#huser{display:none}.brand{font-size:20px}header.top{padding:0 12px}}
+</style>
+</head>
+<body>
+
+<div id="loading">Cargando…</div>
+
+<section id="login" class="login hidden">
+  <div class="lbox">
+    <h1>Mi Gestor <b>Ferretería</b></h1>
+    <p class="sub">Ventas, presupuestos, cuentas corrientes y listas de precios.</p>
+    <div id="lerr" class="lerr hidden"></div>
+    <form id="lform" autocomplete="on">
+      <div class="fg"><label for="lu">Usuario</label><input id="lu" name="username" autocomplete="username" autocapitalize="off" required></div>
+      <div class="fg"><label for="lp">Contraseña</label><input id="lp" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn o big" id="lbtn" type="submit">Ingresar</button>
+    </form>
+    <div class="or">— o —</div>
+    <button class="btn l" id="ldemo" type="button">Probar una demo sin registrarme</button>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div style="display:flex;align-items:center;gap:6px"><button id="hmenu" type="button" aria-label="Menú">☰</button><div class="brand">Mi Gestor <b>Ferretería</b></div></div>
+    <div class="hinfo">
+      <span id="hflag"></span>
+      <span class="neg" id="hneg"></span>
+      <span id="huser"></span>
+      <button class="btn l sm" id="hout" type="button">Salir</button>
+    </div>
+  </header>
+  <nav id="nav"></nav>
+  <div id="nbk"></div>
+  <main id="main"></main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<script>
+'use strict';
+/* ===================== CONFIG ===================== */
+const SB_URL = 'https://yabschiaphpiozajnwxx.supabase.co';
+const SB_KEY = 'sb_publishable_BZlDsQFy_PFTx-01ZYt7rg_FN4IqLB5';
+const SES_KEY = 'mgf_sesion_v1';
+const S = { token: null, user: null, neg: null, mod: 'inicio', cats: [], provs: [], clientes: [], saldos: {} };
+const R = {}; // render por módulo
+
+/* ===================== UTILIDADES ===================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r2 = n => Math.round(((+n || 0) + Number.EPSILON) * 100) / 100;
+const fmtM = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = n => fmtM.format(+n || 0);
+const fnum = (n, d) => new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: d == null ? 3 : d }).format(+n || 0);
+const fdate = i => i ? new Date(i).toLocaleDateString('es-AR') : '';
+const fdt = i => i ? new Date(i).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const pad = (n, l) => String(n).padStart(l || 8, '0');
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms || 280); }; };
+const val = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const lista = i => ((S.neg && S.neg.config && S.neg.config.listas_precio) || ['Mostrador', 'Mayorista', 'Constructora'])[i - 1] || ('Lista ' + i);
+const CONDIVA = ['Consumidor Final', 'Monotributo', 'Responsable Inscripto', 'Exento'];
+
+// "1.234,56" / "1,234.56" / "$ 1234" -> número
+function parseNum(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : NaN;
+  let s = String(v == null ? '' : v).trim().replace(/[^\d.,\-]/g, '');
+  if (!s || s === '-' || s === ',' || s === '.') return NaN;
+  const c = s.lastIndexOf(','), d = s.lastIndexOf('.');
+  if (c >= 0 && d >= 0) { s = c > d ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); }
+  else if (c >= 0) { s = /,\d{1,2}$/.test(s) && (s.match(/,/g) || []).length === 1 ? s.replace(',', '.') : s.replace(/,/g, ''); }
+  else if (d >= 0) { if (/^\-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : NaN;
+}
+const sanit = t => String(t || '').replace(/[,()*%\\"'`&#+=?;<>|{}\[\]^:]/g, ' ').replace(/\s+/g, ' ').trim();
+function saveSes() { try { sessionStorage.setItem(SES_KEY, JSON.stringify({ token: S.token, user: S.user, neg: S.neg, t: Date.now() })); } catch (e) { } }
+function loadSes() { try { const j = JSON.parse(sessionStorage.getItem(SES_KEY) || 'null'); if (j && j.token && Date.now() - j.t < 11 * 3600e3) return j; } catch (e) { } return null; }
+function clearSes() { try { sessionStorage.removeItem(SES_KEY); } catch (e) { } }
+
+function toast(msg, tipo) {
+  const d = document.createElement('div');
+  d.className = 'toast ' + (tipo || '');
+  d.textContent = msg;
+  $('#toast-root').appendChild(d);
+  setTimeout(() => d.remove(), tipo === 'err' ? 6000 : 3200);
+}
+function modal(html, wide) {
+  const o = document.createElement('div');
+  o.className = 'moverlay';
+  o.innerHTML = '<div class="modal' + (wide ? ' wide' : '') + '"><button type="button" class="mx" aria-label="Cerrar" title="Cerrar">×</button>' + html + '</div>';
+  o.querySelector('.mx').addEventListener('click', () => o.remove());
+  o.addEventListener('mousedown', e => { if (e.target === o) o.remove(); });
+  $('#modal-root').appendChild(o);
+  const f = o.querySelector('input:not([type=hidden]),select,textarea');
+  if (f && !wide) setTimeout(() => f.focus(), 30);
+  return o;
+}
+function closeModal() { const m = $$('.moverlay'); if (m.length) m[m.length - 1].remove(); }
+function ask(texto, ok, danger) {
+  return new Promise(res => {
+    const o = modal('<h2>Confirmar</h2><p style="margin-bottom:6px">' + esc(texto).replace(/\n/g, '<br>') + '</p><div class="mfoot"><button class="btn l" id="ask-n">Cancelar</button><button class="btn ' + (danger ? 'r' : 'o') + '" id="ask-s">' + esc(ok || 'Aceptar') + '</button></div>');
+    o.querySelector('#ask-n').onclick = () => { o.remove(); res(false); };
+    o.querySelector('#ask-s').onclick = () => { o.remove(); res(true); };
+  });
+}
+async function busy(btn, fn) {
+  if (btn) btn.disabled = true;
+  try { return await fn(); } catch (e) { toast(e.message || String(e), 'err'); } finally { if (btn) btn.disabled = false; }
+}
+const put = (sel, html) => { const e = $(sel); if (e) e.innerHTML = html; return !!e; };
+const main = h => { $('#main').innerHTML = h; window.scrollTo(0, 0); };
+const loadingHtml = '<div class="vacio">Cargando…</div>';
+
+/* ===================== API ===================== */
+async function api(path, o) {
+  o = o || {};
+  const m = o.method || 'GET';
+  const h = { apikey: SB_KEY, Authorization: 'Bearer ' + (S.token || SB_KEY) };
+  if (m === 'GET' || m === 'HEAD') h['Accept-Profile'] = 'ferreteria'; else h['Content-Profile'] = 'ferreteria';
+  if (o.body !== undefined) h['Content-Type'] = 'application/json';
+  const pf = [];
+  if (o.prefer) pf.push(o.prefer);
+  if (o.count) pf.push('count=exact');
+  if (pf.length) h.Prefer = pf.join(',');
+  if (o.range) { h.Range = o.range; h['Range-Unit'] = 'items'; }
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { method: m, headers: h, body: o.body !== undefined ? JSON.stringify(o.body) : undefined });
+  const txt = await r.text();
+  let data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = txt; }
+  if (!r.ok) {
+    if (r.status === 401 && S.token) { toast('Tu sesión venció. Volvé a ingresar.', 'err'); setTimeout(logout, 900); }
+    throw new Error((data && (data.message || data.hint || data.error)) || ('Error ' + r.status));
+  }
+  if (o.count) { const cr = r.headers.get('Content-Range') || ''; const t = parseInt(cr.split('/')[1], 10); return { data, total: isNaN(t) ? null : t }; }
+  return data;
+}
+const rpc = (fn, args) => api('rpc/' + fn, { method: 'POST', body: args || {} });
+const q = s => encodeURIComponent(s);
+
+/* ===================== SESIÓN ===================== */
+function showLogin(msg) {
+  $('#loading').classList.add('hidden');
+  $('#app').classList.add('hidden');
+  $('#login').classList.remove('hidden');
+  const e = $('#lerr');
+  if (msg) { e.textContent = msg; e.classList.remove('hidden'); } else e.classList.add('hidden');
+}
+async function loginFetch(body) {
+  const r = await fetch(SB_URL + '/functions/v1/login-ferreteria', { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.token) throw new Error(j.error || 'No se pudo ingresar');
+  S.token = j.token; S.user = j.usuario;
+  const n = await api('negocios?select=*');
+  S.neg = (n && n[0]) || j.negocio || {};
+  saveSes();
+}
+async function enterApp() {
+  $('#loading').classList.add('hidden');
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#hneg').textContent = S.neg.nombre || '';
+  $('#huser').textContent = S.user ? S.user.nombre : '';
+  $('#hflag').innerHTML = S.neg.es_demo ? '<span class="pill demo">Demo</span>' : (S.neg.es_dev ? '<span class="pill dev">Dev</span>' : '');
+  document.title = (S.neg.nombre || 'Mi Gestor Ferretería') + ' · Mi Gestor Ferretería';
+  const MODS = [['inicio', 'Inicio', '🏠'], ['ventas', 'Ventas', '🧾'], ['presupuestos', 'Presupuestos', '📋'], ['articulos', 'Artículos', '🔩'], ['clientes', 'Clientes', '👷'], ['proveedores', 'Proveedores', '🚚'], ['precios', 'Precios', '💲'], ['caja', 'Caja', '💵'], ['config', 'Configuración', '⚙️']];
+  $('#nav').innerHTML = MODS.map(m => '<button class="tab" data-m="' + m[0] + '" onclick="go(\'' + m[0] + '\')"><span class="ti">' + m[2] + '</span>' + m[1] + '</button>').join('');
+  try { await Promise.all([loadCats(), loadProvs(), loadClientes()]); } catch (e) { toast('No se pudieron cargar los datos base: ' + e.message, 'err'); }
+  go('inicio');
+}
+function logout() { clearSes(); S.token = null; S.user = null; S.neg = null; location.href = location.pathname; }
+async function demoLogin(n) {
+  await loginFetch({ demo: true, n: parseInt(n, 10) || undefined });
+  history.replaceState(null, '', location.pathname);
+  await enterApp();
+}
+async function boot() {
+  const p = new URLSearchParams(location.search);
+  try {
+    if (p.has('demo')) { await demoLogin(p.get('demo')); return; }
+    const s = loadSes();
+    if (s) { S.token = s.token; S.user = s.user; S.neg = s.neg; await enterApp(); return; }
+  } catch (e) { clearSes(); S.token = null; showLogin(e.message); return; }
+  showLogin();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  $('#lform').addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = $('#lbtn'); b.disabled = true; b.textContent = 'Ingresando…';
+    try { await loginFetch({ username: val('lu').trim(), password: val('lp') }); await enterApp(); }
+    catch (err) { showLogin(err.message); }
+    finally { b.disabled = false; b.textContent = 'Ingresar'; }
+  });
+  $('#ldemo').addEventListener('click', async () => {
+    const b = $('#ldemo'); b.disabled = true; b.textContent = 'Preparando la demo…';
+    try { await demoLogin(); } catch (err) { showLogin(err.message); }
+    finally { b.disabled = false; b.textContent = 'Probar una demo sin registrarme'; }
+  });
+  $('#hout').addEventListener('click', logout);
+  $('#hmenu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
+  $('#nbk').addEventListener('click', () => $('#app').classList.remove('nav-open'));
+  boot();
+});
+
+/* ===================== NAVEGACIÓN ===================== */
+async function go(m, arg) {
+  S.mod = m;
+  $$('#nav .tab').forEach(t => t.classList.toggle('act', t.dataset.m === m)); $('#app').classList.remove('nav-open');
+  main(loadingHtml);
+  try { await R[m](arg); } catch (e) { main('<div class="panel"><div class="alert a-bad">No se pudo cargar esta pantalla: ' + esc(e.message) + '</div></div>'); }
+}
+async function loadCats() { S.cats = await api('categorias?select=id,nombre&order=nombre.asc'); }
+async function loadProvs() { S.provs = await api('proveedores?select=*&activo=eq.true&order=nombre.asc'); }
+async function loadClientes() {
+  const [c, s] = await Promise.all([api('clientes?select=*&activo=eq.true&order=nombre.asc&limit=3000'), api('v_saldos?select=cliente_id,saldo')]);
+  S.clientes = c; S.saldos = {}; (s || []).forEach(x => { S.saldos[x.cliente_id] = +x.saldo; });
+}
+const cliById = id => S.clientes.find(c => c.id === id);
+const provNom = id => { const p = S.provs.find(x => x.id === id); return p ? p.nombre : ''; };
+const catNom = id => { const c = S.cats.find(x => x.id === id); return c ? c.nombre : ''; };
+const optsCli = (sel, conCF) => S.clientes.map(c => '<option value="' + c.id + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.nombre) + (c.cuit ? ' · ' + esc(c.cuit) : '') + '</option>').join('');
+const optsProv = (sel, todos) => (todos ? '<option value="">' + todos + '</option>' : '<option value="">— Sin proveedor —</option>') + S.provs.map(p => '<option value="' + p.id + '"' + (p.id === sel ? ' selected' : '') + '>' + esc(p.nombre) + '</option>').join('');
+const optsCat = (sel, todos) => '<option value="">' + (todos || '— Sin categoría —') + '</option>' + S.cats.map(c => '<option value="' + c.id + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('');
+
+/* Totales: precios netos (sin IVA). El IVA se suma por alícuota. */
+function calcTot(items, descPct) {
+  let sub = 0, iva = 0; const rates = {};
+  items.forEach(i => {
+    const l = r2(i.cantidad * i.precio_unit * (1 - (i.descuento_pct || 0) / 100));
+    sub += l; const iv = l * (i.iva_pct || 0) / 100; iva += iv; rates[i.iva_pct] = (rates[i.iva_pct] || 0) + iv;
+  });
+  const d = +descPct || 0, desc = r2(sub * d / 100), k = 1 - d / 100;
+  Object.keys(rates).forEach(k2 => { rates[k2] = r2(rates[k2] * k); });
+  const ivaF = r2(iva * k);
+  return { sub: r2(sub), desc, iva: ivaF, total: r2(sub - desc + ivaF), rates };
+}
+const lineaTot = i => r2(i.cantidad * i.precio_unit * (1 - (i.descuento_pct || 0) / 100));
+
+/* Imprimir / guardar como PDF: abre una ventana con el documento */
+function openPrintWin() { const w = window.open('', '_blank'); if (!w) toast('El navegador bloqueó la ventana. Permití las ventanas emergentes para este sitio.', 'err'); return w; }
+function writePrint(w, titulo, body, ancho) {
+  if (!w) return;
+  w.document.open();
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>' + esc(titulo) + '</title><style>' +
+    '*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:' + (ancho ? '6px' : '24px') + ';font-size:' + (ancho ? '12px' : '13px') + '}' +
+    'h1{font-size:22px;margin:0}h2{font-size:15px;margin:0 0 4px}table{width:100%;border-collapse:collapse}th{background:#2b3440;color:#fff;text-align:left;padding:6px 7px;font-size:11px;text-transform:uppercase}' +
+    'td{padding:5px 7px;border-bottom:1px solid #ddd}td.n,th.n{text-align:right;white-space:nowrap}.hd{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #ea580c;padding-bottom:10px;margin-bottom:12px}' +
+    '.box{border:1px solid #ccc;border-radius:6px;padding:8px 10px;margin-bottom:10px}.tot{margin-left:auto;width:290px;margin-top:10px}.tot div{display:flex;justify-content:space-between;padding:2px 0}' +
+    '.tot .t{border-top:2px solid #111;font-size:17px;font-weight:700;margin-top:4px;padding-top:4px}.leg{font-size:11px;color:#555;margin-top:14px}.big{font-size:20px;font-weight:700;color:#ea580c}' +
+    '.c{text-align:center}@media print{.np{display:none}body{margin:10mm}}</style></head><body>' +
+    '<div class="np" style="margin-bottom:10px"><button onclick="window.print()" style="padding:8px 16px;font-size:14px;cursor:pointer">🖨️ Imprimir / Guardar como PDF</button></div>' + body + '</body></html>');
+  w.document.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch (e) { } }, 450);
+}
+const negHeader = () => '<div><h1>' + esc(S.neg.nombre || '') + '</h1><div>' + esc(S.neg.slogan || '') + '</div><div>' + esc(S.neg.direccion || '') + '</div><div>' + esc([S.neg.telefono, S.neg.email].filter(Boolean).join(' · ')) + '</div>' +
+  '<div>' + (S.neg.cuit ? 'CUIT: ' + esc(S.neg.cuit) + ' · ' : '') + esc(S.neg.condicion_iva || '') + '</div></div>';
+/* ===================== INICIO ===================== */
+R.inicio = async () => {
+  const r = await rpc('resumen');
+  const dem = S.neg.es_demo ? '<div class="alert a-info"><b>Estás en una demo.</b> Podés cargar ventas, armar presupuestos y probar la actualización de precios. Los datos son de ejemplo y se pueden reiniciar: no cargues información real.</div>' : '';
+  main(dem +
+    '<div class="sgrid">' +
+    '<div class="scard o"><div class="slbl">Ventas de hoy</div><div class="snum">' + money(r.ventas_hoy) + '</div><div class="ssub">' + r.cant_ventas_hoy + ' venta(s)</div></div>' +
+    '<div class="scard"><div class="slbl">Ventas del mes</div><div class="snum">' + money(r.ventas_mes) + '</div></div>' +
+    '<div class="scard y"><div class="slbl">Presupuestos abiertos</div><div class="snum">' + r.presupuestos_abiertos + '</div><div class="ssub">' + money(r.presupuestos_monto) + ' en juego</div></div>' +
+    '<div class="scard r"><div class="slbl">Deuda en cuentas corrientes</div><div class="snum">' + money(r.deuda_total) + '</div></div>' +
+    '<div class="scard ' + (r.stock_bajo ? 'r' : 'g') + '"><div class="slbl">Artículos con stock bajo</div><div class="snum">' + r.stock_bajo + '</div><div class="ssub">de ' + r.articulos + ' artículos</div></div>' +
+    '</div>' +
+    '<div class="brow"><button class="btn o big" onclick="go(\'ventas\')">🧾 Nueva venta</button><button class="btn big" onclick="go(\'presupuestos\',{nuevo:true})">📋 Nuevo presupuesto</button><button class="btn l big" onclick="go(\'precios\')">💲 Actualizar precios</button></div>' +
+    '<div class="g2"><div class="panel"><div class="ptit">Clientes que más deben</div>' +
+    (r.deudores.length ? '<div class="twrap"><table><tbody>' + r.deudores.map(d => '<tr class="click" onclick="clienteVer(\'' + d.id + '\')"><td>' + esc(d.nombre) + '</td><td class="n neg2">' + money(d.saldo) + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Nadie debe nada 🎉</div>') + '</div>' +
+    '<div class="panel"><div class="ptit">Reponer stock</div>' +
+    (r.bajo_stock.length ? '<div class="twrap"><table><thead><tr><th>Artículo</th><th class="n">Stock</th><th class="n">Mínimo</th></tr></thead><tbody>' + r.bajo_stock.map(a => '<tr><td><b>' + esc(a.codigo) + '</b> ' + esc(a.descripcion) + '</td><td class="n neg2">' + fnum(a.stock) + '</td><td class="n">' + fnum(a.stock_min) + '</td></tr>').join('') + '</tbody></table></div><div style="margin-top:8px"><button class="btn l sm" onclick="go(\'articulos\',{low:true})">Ver todos</button></div>' : '<div class="vacio">Todo el stock está por encima del mínimo.</div>') + '</div></div>');
+};
+
+/* ===================== ARTÍCULOS ===================== */
+const A = { q: '', cat: '', prov: '', low: false, page: 0, per: 50 };
+R.articulos = async arg => {
+  if (arg && arg.low) { A.low = true; A.q = ''; A.cat = ''; A.prov = ''; A.page = 0; }
+  main('<div class="panel"><div class="ptit">🔩 Artículos <span class="sp"></span><button class="btn o" onclick="artEdit()">+ Nuevo artículo</button></div>' +
+    '<div class="brow"><div class="srch">🔎<input id="a-q" placeholder="Buscar por código, descripción, marca o código de barras" value="' + esc(A.q) + '"></div>' +
+    '<select id="a-cat" style="max-width:200px">' + optsCat(A.cat, 'Todas las categorías') + '</select>' +
+    '<select id="a-prov" style="max-width:220px">' + optsProv(A.prov, 'Todos los proveedores') + '</select>' +
+    '<label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="a-low"' + (A.low ? ' checked' : '') + '> Solo stock bajo</label></div>' +
+    '<div id="a-list">' + loadingHtml + '</div></div>');
+  const re = () => { A.q = val('a-q'); A.cat = val('a-cat'); A.prov = val('a-prov'); A.low = $('#a-low').checked; A.page = 0; artLoad(); };
+  $('#a-q').addEventListener('input', debounce(re, 300));
+  ['a-cat', 'a-prov', 'a-low'].forEach(id => $('#' + id).addEventListener('change', re));
+  artLoad();
+};
+function artFilter(term) {
+  const words = sanit(term).split(' ').filter(Boolean).slice(0, 5);
+  if (!words.length) return '';
+  return '&and=(' + words.map(w => 'or(descripcion.ilike.*' + w + '*,codigo.ilike.*' + w + '*,marca.ilike.*' + w + '*,codigo_barras.ilike.*' + w + '*)').join(',') + ')';
+}
+async function artLoad() {
+  if (!$('#a-list')) return;
+  let p = 'articulos?select=*&activo=eq.true&order=descripcion.asc' + artFilter(A.q);
+  if (A.cat) p += '&categoria_id=eq.' + A.cat;
+  if (A.prov) p += '&proveedor_id=eq.' + A.prov;
+  if (A.low) p += '&stock_bajo=eq.true';
+  const from = A.page * A.per;
+  let res;
+  try { res = await api(p, { count: true, range: from + '-' + (from + A.per - 1) }); } catch (e) { put('#a-list', '<div class="alert a-bad">' + esc(e.message) + '</div>'); return; }
+  const rows = res.data || [], tot = res.total;
+  put('#a-list', rows.length ?
+    '<div class="twrap"><table><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th class="n">Stock</th><th class="n">Costo</th><th class="n">' + esc(lista(1)) + '</th><th class="n">' + esc(lista(2)) + '</th><th class="n">' + esc(lista(3)) + '</th><th></th></tr></thead><tbody>' +
+    rows.map(a => '<tr><td><b>' + esc(a.codigo) + '</b></td><td>' + esc(a.descripcion) + (a.marca ? ' <span class="hint">· ' + esc(a.marca) + '</span>' : '') + '</td><td>' + esc(catNom(a.categoria_id)) + '</td>' +
+      '<td class="n">' + (a.stock_bajo ? '<span class="badge b-bad">' + fnum(a.stock) + '</span>' : fnum(a.stock)) + ' <span class="hint">' + esc(a.unidad) + '</span></td><td class="n">' + money(a.costo) + '</td><td class="n"><b>' + money(a.precio1) + '</b></td><td class="n">' + money(a.precio2) + '</td><td class="n">' + money(a.precio3) + '</td>' +
+      '<td><button class="btn l sm" onclick="artEdit(\'' + a.id + '\')">Editar</button></td></tr>').join('') + '</tbody></table></div>' +
+    '<div class="pager"><span>' + (tot != null ? (from + 1) + '–' + (from + rows.length) + ' de ' + tot : rows.length + ' artículos') + '</span><button class="btn l sm" ' + (A.page ? '' : 'disabled') + ' onclick="A.page--;artLoad()">← Anterior</button><button class="btn l sm" ' + ((tot != null && from + rows.length >= tot) || rows.length < A.per ? 'disabled' : '') + ' onclick="A.page++;artLoad()">Siguiente →</button></div>'
+    : '<div class="vacio">No hay artículos con ese filtro.</div>');
+}
+const UNIDADES = ['un', 'm', 'm2', 'm3', 'kg', 'l', 'caja', 'bolsa', 'rollo', 'par', 'juego', 'barra', 'pack'];
+async function artEdit(id) {
+  let a = { codigo: '', codigo_barras: '', descripcion: '', marca: '', categoria_id: '', proveedor_id: '', unidad: 'un', costo: 0, iva_pct: 21, margen_pct: 30, precio1: 0, precio2: 0, precio3: 0, stock: 0, stock_min: 0, ubicacion: '' };
+  let cp = '';
+  if (id) {
+    const r = await api('articulos?id=eq.' + id + '&select=*'); a = r[0];
+    const l = await api('articulo_proveedor?articulo_id=eq.' + id + '&select=codigo_proveedor,proveedor_id&limit=1'); if (l[0]) cp = l[0].codigo_proveedor;
+  }
+  const mg = p => a.costo > 0 ? r2((p / a.costo - 1) * 100) : 0;
+  const o = modal('<h2>' + (id ? 'Editar artículo' : 'Nuevo artículo') + '</h2>' +
+    '<div class="fgrid"><div class="fg"><label>Código *</label><input id="f-cod" value="' + esc(a.codigo) + '"></div><div class="fg"><label>Código de barras</label><input id="f-bar" value="' + esc(a.codigo_barras) + '"></div>' +
+    '<div class="fg wf"><label>Descripción *</label><input id="f-des" value="' + esc(a.descripcion) + '"></div>' +
+    '<div class="fg"><label>Marca</label><input id="f-mar" value="' + esc(a.marca) + '"></div><div class="fg"><label>Categoría</label><select id="f-cat">' + optsCat(a.categoria_id) + '<option value="__n">+ Nueva categoría…</option></select></div>' +
+    '<div class="fg"><label>Proveedor</label><select id="f-prov">' + optsProv(a.proveedor_id) + '</select></div><div class="fg"><label>Código en la lista del proveedor</label><input id="f-cprov" value="' + esc(cp) + '" placeholder="Para que la lista lo reconozca"></div>' +
+    '<div class="fg"><label>Unidad</label><select id="f-uni">' + UNIDADES.map(u => '<option' + (u === a.unidad ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></div><div class="fg"><label>IVA %</label><select id="f-iva">' + [21, 10.5, 27, 0].map(v => '<option value="' + v + '"' + (+a.iva_pct === v ? ' selected' : '') + '>' + v + '%</option>').join('') + '</select></div>' +
+    '<div class="fg"><label>Costo (sin IVA)</label><input id="f-costo" type="number" step="0.01" min="0" value="' + a.costo + '"></div></div>' +
+    '<div class="stit" style="font-weight:700;margin:4px 0">Precios de venta (sin IVA) y margen sobre costo</div>' +
+    '<div class="fgrid">' + [1, 2, 3].map(n => '<div class="fg"><label>' + esc(lista(n)) + '</label><div style="display:flex;gap:6px"><input id="f-p' + n + '" type="number" step="0.01" min="0" value="' + a['precio' + n] + '" oninput="artCalc(\'p' + n + '\')"><input id="f-m' + n + '" type="number" step="0.1" value="' + mg(a['precio' + n]) + '" style="max-width:84px" oninput="artCalc(\'m' + n + '\')" title="Margen %"></div></div>').join('') + '</div>' +
+    '<div class="fgrid"><div class="fg"><label>Stock actual</label><input id="f-stk" type="number" step="0.001" value="' + a.stock + '"></div><div class="fg"><label>Stock mínimo</label><input id="f-min" type="number" step="0.001" min="0" value="' + a.stock_min + '"></div><div class="fg"><label>Ubicación</label><input id="f-ubi" value="' + esc(a.ubicacion) + '" placeholder="Góndola, estante…"></div></div>' +
+    '<div class="mfoot">' + (id ? '<button class="btn r" style="margin-right:auto" onclick="artBaja(\'' + id + '\')">Dar de baja</button>' : '') + '<button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="f-save" onclick="artSave(' + (id ? '\'' + id + '\'' : 'null') + ')">Guardar</button></div>');
+  $('#f-cat', o).addEventListener('change', async e => {
+    const sel = e.target;
+    if (sel.value !== '__n') return;
+    const n = (prompt('Nombre de la nueva categoría:') || '').trim();
+    if (!n) { sel.value = ''; return; }
+    try { const r = await api('categorias', { method: 'POST', body: { negocio_id: S.neg.id, nombre: n }, prefer: 'return=representation' }); await loadCats(); sel.innerHTML = optsCat(r[0].id) + '<option value="__n">+ Nueva categoría…</option>'; } catch (er) { toast(er.message, 'err'); sel.value = ''; }
+  });
+}
+function artCalc(src) {
+  const costo = parseFloat(val('f-costo')) || 0, n = src[1];
+  if (src[0] === 'p') $('#f-m' + n).value = costo > 0 ? r2((parseFloat(val('f-p' + n)) / costo - 1) * 100) : 0;
+  else $('#f-p' + n).value = r2(costo * (1 + (parseFloat(val('f-m' + n)) || 0) / 100));
+}
+async function artSave(id) {
+  const cod = val('f-cod').trim(), des = val('f-des').trim();
+  if (!cod || !des) return toast('Completá código y descripción', 'err');
+  const body = { codigo: cod, codigo_barras: val('f-bar').trim() || null, descripcion: des, marca: val('f-mar').trim() || null, categoria_id: val('f-cat') && val('f-cat') !== '__n' ? val('f-cat') : null, proveedor_id: val('f-prov') || null, unidad: val('f-uni'), iva_pct: +val('f-iva'), costo: parseFloat(val('f-costo')) || 0, margen_pct: parseFloat(val('f-m1')) || 0, precio1: parseFloat(val('f-p1')) || 0, precio2: parseFloat(val('f-p2')) || 0, precio3: parseFloat(val('f-p3')) || 0, stock: parseFloat(val('f-stk')) || 0, stock_min: parseFloat(val('f-min')) || 0, ubicacion: val('f-ubi').trim() || null, updated_at: new Date().toISOString() };
+  await busy($('#f-save'), async () => {
+    let aid = id;
+    if (id) await api('articulos?id=eq.' + id, { method: 'PATCH', body });
+    else { body.negocio_id = S.neg.id; const r = await api('articulos', { method: 'POST', body, prefer: 'return=representation' }); aid = r[0].id; }
+    await api('articulo_proveedor?articulo_id=eq.' + aid, { method: 'DELETE' });
+    const cp = val('f-cprov').trim();
+    if (cp && body.proveedor_id) await api('articulo_proveedor', { method: 'POST', body: { negocio_id: S.neg.id, articulo_id: aid, proveedor_id: body.proveedor_id, codigo_proveedor: cp, descripcion_proveedor: des, costo_lista: body.costo } });
+    closeModal(); toast('Artículo guardado', 'ok'); artLoad();
+  });
+}
+async function artBaja(id) {
+  if (!await ask('¿Dar de baja este artículo? Deja de aparecer en las búsquedas, pero se conservan las ventas y presupuestos anteriores.', 'Dar de baja', true)) return;
+  try { await api('articulos?id=eq.' + id, { method: 'PATCH', body: { activo: false } }); closeModal(); toast('Artículo dado de baja', 'ok'); artLoad(); } catch (e) { toast(e.message, 'err'); }
+}
+
+/* ===================== PROVEEDORES ===================== */
+R.proveedores = async () => {
+  await loadProvs();
+  main('<div class="panel"><div class="ptit">🚚 Proveedores <span class="sp"></span><button class="btn o" onclick="provEdit()">+ Nuevo proveedor</button></div>' +
+    (S.provs.length ? '<div class="twrap"><table><thead><tr><th>Nombre</th><th>CUIT</th><th>Contacto</th><th>Teléfono</th><th class="n">Desc. base</th><th></th></tr></thead><tbody>' +
+      S.provs.map(p => '<tr><td><b>' + esc(p.nombre) + '</b></td><td>' + esc(p.cuit || '') + '</td><td>' + esc(p.contacto || '') + '</td><td>' + esc(p.telefono || '') + '</td><td class="n">' + fnum(p.descuento_base_pct, 2) + '%</td><td style="white-space:nowrap"><button class="btn l sm" onclick="provEdit(\'' + p.id + '\')">Editar</button> <button class="btn sm" onclick="go(\'precios\',{prov:\'' + p.id + '\'})">💲 Cargar lista</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Todavía no cargaste proveedores.</div>') + '</div>');
+};
+function provEdit(id) {
+  const p = S.provs.find(x => x.id === id) || { nombre: '', cuit: '', telefono: '', email: '', contacto: '', descuento_base_pct: 0, notas: '' };
+  modal('<h2>' + (id ? 'Editar proveedor' : 'Nuevo proveedor') + '</h2><div class="fgrid"><div class="fg wf"><label>Nombre *</label><input id="p-nom" value="' + esc(p.nombre) + '"></div><div class="fg"><label>CUIT</label><input id="p-cuit" value="' + esc(p.cuit || '') + '"></div><div class="fg"><label>Contacto</label><input id="p-con" value="' + esc(p.contacto || '') + '"></div><div class="fg"><label>Teléfono</label><input id="p-tel" value="' + esc(p.telefono || '') + '"></div><div class="fg"><label>Email</label><input id="p-mail" value="' + esc(p.email || '') + '"></div>' +
+    '<div class="fg"><label>Descuento habitual sobre su lista %</label><input id="p-desc" type="number" step="0.01" min="0" max="99" value="' + (p.descuento_base_pct || 0) + '"></div><div class="fg wf"><label>Notas</label><textarea id="p-not">' + esc(p.notas || '') + '</textarea></div></div>' +
+    '<div class="mfoot">' + (id ? '<button class="btn r" style="margin-right:auto" onclick="provBaja(\'' + id + '\')">Dar de baja</button>' : '') + '<button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="p-save" onclick="provSave(' + (id ? '\'' + id + '\'' : 'null') + ')">Guardar</button></div>');
+}
+async function provSave(id) {
+  const nom = val('p-nom').trim(); if (!nom) return toast('Falta el nombre', 'err');
+  const b = { nombre: nom, cuit: val('p-cuit').trim() || null, contacto: val('p-con').trim() || null, telefono: val('p-tel').trim() || null, email: val('p-mail').trim() || null, descuento_base_pct: parseFloat(val('p-desc')) || 0, notas: val('p-not').trim() || null };
+  await busy($('#p-save'), async () => {
+    if (id) await api('proveedores?id=eq.' + id, { method: 'PATCH', body: b }); else { b.negocio_id = S.neg.id; await api('proveedores', { method: 'POST', body: b }); }
+    closeModal(); toast('Proveedor guardado', 'ok'); R.proveedores();
+  });
+}
+async function provBaja(id) {
+  if (!await ask('¿Dar de baja este proveedor?', 'Dar de baja', true)) return;
+  try { await api('proveedores?id=eq.' + id, { method: 'PATCH', body: { activo: false } }); closeModal(); toast('Proveedor dado de baja', 'ok'); R.proveedores(); } catch (e) { toast(e.message, 'err'); }
+}
+
+/* ===================== CLIENTES + CUENTA CORRIENTE ===================== */
+const C = { q: '', deuda: false };
+R.clientes = async () => {
+  await loadClientes();
+  main('<div class="panel"><div class="ptit">👷 Clientes y cuentas corrientes <span class="sp"></span><button class="btn o" onclick="cliEdit()">+ Nuevo cliente</button></div>' +
+    '<div class="brow"><div class="srch">🔎<input id="c-q" placeholder="Buscar por nombre o CUIT" value="' + esc(C.q) + '"></div><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="c-d"' + (C.deuda ? ' checked' : '') + '> Solo con deuda</label></div><div id="c-list"></div></div>');
+  const re = () => { C.q = val('c-q'); C.deuda = $('#c-d').checked; cliList(); };
+  $('#c-q').addEventListener('input', debounce(re, 150)); $('#c-d').addEventListener('change', re);
+  cliList();
+};
+function cliList() {
+  if (!$('#c-list')) return;
+  const t = C.q.toLowerCase();
+  const rows = S.clientes.filter(c => (!t || c.nombre.toLowerCase().includes(t) || (c.cuit || '').includes(t)) && (!C.deuda || (S.saldos[c.id] || 0) > 0.009));
+  const totDeuda = S.clientes.reduce((s, c) => s + Math.max(0, S.saldos[c.id] || 0), 0);
+  $('#c-list').innerHTML = rows.length ? '<div class="twrap"><table><thead><tr><th>Cliente</th><th>CUIT</th><th>Condición IVA</th><th>Tipo</th><th>Lista</th><th class="n">Límite</th><th class="n">Saldo</th></tr></thead><tbody>' +
+    rows.map(c => { const s = S.saldos[c.id] || 0; return '<tr class="click" onclick="clienteVer(\'' + c.id + '\')"><td><b>' + esc(c.nombre) + '</b></td><td>' + esc(c.cuit || '') + '</td><td>' + esc(c.condicion_iva || '') + '</td><td>' + esc(c.tipo || '') + '</td><td>' + esc(lista(c.lista_precio)) + '</td><td class="n">' + (c.limite_credito > 0 ? money(c.limite_credito) : '—') + '</td><td class="n ' + (s > 0.009 ? 'neg2' : s < -0.009 ? 'pos' : '') + '">' + money(s) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="pager"><span>Deuda total de los clientes: <b>' + money(totDeuda) + '</b></span></div>' : '<div class="vacio">No hay clientes con ese filtro.</div>';
+}
+function cliEdit(id) {
+  const c = S.clientes.find(x => x.id === id) || { nombre: '', cuit: '', condicion_iva: 'Responsable Inscripto', tipo: 'particular', telefono: '', email: '', direccion: '', localidad: '', limite_credito: 0, lista_precio: 1, descuento_pct: 0, notas: '' };
+  modal('<h2>' + (id ? 'Editar cliente' : 'Nuevo cliente') + '</h2><div class="fgrid"><div class="fg wf"><label>Nombre o razón social *</label><input id="k-nom" value="' + esc(c.nombre) + '"></div><div class="fg"><label>CUIT / DNI</label><input id="k-cuit" value="' + esc(c.cuit || '') + '"></div>' +
+    '<div class="fg"><label>Condición frente al IVA</label><select id="k-iva">' + CONDIVA.map(v => '<option' + (v === c.condicion_iva ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>' +
+    '<div class="fg"><label>Tipo</label><select id="k-tipo">' + ['particular', 'constructora', 'empresa', 'profesional'].map(v => '<option' + (v === c.tipo ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>' +
+    '<div class="fg"><label>Lista de precios</label><select id="k-lis">' + [1, 2, 3].map(n => '<option value="' + n + '"' + (n === c.lista_precio ? ' selected' : '') + '>' + esc(lista(n)) + '</option>').join('') + '</select></div>' +
+    '<div class="fg"><label>Descuento habitual %</label><input id="k-dto" type="number" step="0.01" min="0" max="100" value="' + (c.descuento_pct || 0) + '"></div><div class="fg"><label>Límite de crédito (0 = sin límite)</label><input id="k-lim" type="number" step="1" min="0" value="' + (c.limite_credito || 0) + '"></div>' +
+    '<div class="fg"><label>Teléfono</label><input id="k-tel" value="' + esc(c.telefono || '') + '"></div><div class="fg"><label>Email</label><input id="k-mail" value="' + esc(c.email || '') + '"></div><div class="fg"><label>Dirección</label><input id="k-dir" value="' + esc(c.direccion || '') + '"></div><div class="fg"><label>Localidad</label><input id="k-loc" value="' + esc(c.localidad || '') + '"></div><div class="fg wf"><label>Notas</label><textarea id="k-not">' + esc(c.notas || '') + '</textarea></div></div>' +
+    '<div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="k-save" onclick="cliSave(' + (id ? '\'' + id + '\'' : 'null') + ')">Guardar</button></div>');
+}
+async function cliSave(id) {
+  const nom = val('k-nom').trim(); if (!nom) return toast('Falta el nombre', 'err');
+  const b = { nombre: nom, cuit: val('k-cuit').trim() || null, condicion_iva: val('k-iva'), tipo: val('k-tipo'), lista_precio: +val('k-lis'), descuento_pct: parseFloat(val('k-dto')) || 0, limite_credito: parseFloat(val('k-lim')) || 0, telefono: val('k-tel').trim() || null, email: val('k-mail').trim() || null, direccion: val('k-dir').trim() || null, localidad: val('k-loc').trim() || null, notas: val('k-not').trim() || null };
+  await busy($('#k-save'), async () => {
+    if (id) await api('clientes?id=eq.' + id, { method: 'PATCH', body: b }); else { b.negocio_id = S.neg.id; await api('clientes', { method: 'POST', body: b }); }
+    await loadClientes(); closeModal(); toast('Cliente guardado', 'ok'); if (S.mod === 'clientes') cliList();
+  });
+}
+async function clienteVer(id) {
+  const c = cliById(id) || (await api('clientes?id=eq.' + id + '&select=*'))[0];
+  const mov = await api('cuenta_corriente?cliente_id=eq.' + id + '&select=*&order=fecha.asc,created_at.asc&limit=1000');
+  let saldo = 0; const rows = mov.map(m => { saldo += m.tipo === 'debe' ? +m.importe : -m.importe; return { ...m, saldo: r2(saldo) }; });
+  // remitos pendientes: pagos con comprobante van al remito; el resto se aplica al más antiguo
+  const ventasCC = await api('ventas?cliente_id=eq.' + id + '&condicion=eq.cuenta_corriente&select=id,numero,fecha,total&order=fecha.asc');
+  const pend = ventasCC.map(v => { const dv = mov.filter(x => x.tipo === 'debe' && x.comprobante_id === v.id).reduce((s, x) => s + +x.importe, 0) || +v.total; const pg = mov.filter(x => x.tipo === 'haber' && x.comprobante_id === v.id).reduce((s, x) => s + +x.importe, 0); return { ...v, debe: r2(dv), resta: r2(dv - pg) }; });
+  let libre = mov.filter(x => x.tipo === 'haber' && !x.comprobante_id).reduce((s, x) => s + +x.importe, 0);
+  pend.forEach(v => { if (v.resta > 0 && libre > 0) { const ap = Math.min(v.resta, libre); v.resta = r2(v.resta - ap); libre = r2(libre - ap); } });
+  const abiertos = pend.filter(v => v.resta > 0.009);
+  const o = modal('<h2>' + esc(c.nombre) + '</h2><div class="hint" style="margin-bottom:10px">' + esc([c.cuit, c.condicion_iva, c.telefono, c.email, c.direccion].filter(Boolean).join(' · ')) + '</div>' +
+    '<div class="sgrid"><div class="scard ' + (saldo > 0.009 ? 'r' : 'g') + '"><div class="slbl">Saldo actual</div><div class="snum">' + money(saldo) + '</div><div class="ssub">' + (saldo > 0.009 ? 'El cliente debe' : saldo < -0.009 ? 'Saldo a favor del cliente' : 'Al día') + '</div></div><div class="scard"><div class="slbl">Límite de crédito</div><div class="snum">' + (c.limite_credito > 0 ? money(c.limite_credito) : 'Sin límite') + '</div><div class="ssub">Lista: ' + esc(lista(c.lista_precio)) + (c.descuento_pct ? ' · Desc. ' + fnum(c.descuento_pct, 2) + '%' : '') + '</div></div></div>' +
+    '<div class="brow"><button class="btn g" onclick="cliPago(\'' + id + '\')">💵 Registrar pago</button><button class="btn" onclick="closeModal();go(\'presupuestos\',{nuevo:true,cliente:\'' + id + '\'})">📋 Nuevo presupuesto</button><button class="btn l" onclick="cliEstado(\'' + id + '\')">🖨️ Estado de cuenta</button><button class="btn l" onclick="closeModal();cliEdit(\'' + id + '\')">✏️ Editar</button></div>' +
+    (abiertos.length ? '<div class="panel" style="padding:12px;margin-bottom:12px;border:1.5px solid var(--acc2)"><div class="ptit" style="font-size:18px">🧾 Remitos pendientes de cobro</div><div class="twrap"><table><thead><tr><th>Remito</th><th>Fecha</th><th class="n">Total</th><th class="n">Falta cobrar</th><th></th></tr></thead><tbody>' + abiertos.map(v => '<tr><td><b>N° ' + pad(v.numero, 8) + '</b></td><td>' + fdate(v.fecha) + '</td><td class="n">' + money(v.debe) + '</td><td class="n"><b>' + money(v.resta) + '</b></td><td><button class="btn g sm" onclick="cobrarRemito(\'' + v.id + '\',' + v.resta + ',' + v.numero + ',\'' + id + '\')">💵 Cobrar</button></td></tr>').join('') + '</tbody></table></div></div>' : '') +
+    (rows.length ? '<div class="twrap" style="max-height:46vh;overflow-y:auto"><table><thead><tr><th>Fecha</th><th>Concepto</th><th class="n">Debe</th><th class="n">Haber</th><th class="n">Saldo</th></tr></thead><tbody>' + rows.slice().reverse().map(m => '<tr><td>' + fdate(m.fecha) + '</td><td>' + esc(m.concepto || '') + (m.medio_pago ? ' <span class="hint">(' + esc(m.medio_pago) + ')</span>' : '') + '</td><td class="n">' + (m.tipo === 'debe' ? money(m.importe) : '') + '</td><td class="n pos">' + (m.tipo === 'haber' ? money(m.importe) : '') + '</td><td class="n"><b>' + money(m.saldo) + '</b></td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Este cliente todavía no tiene movimientos.</div>') +
+    '<div class="mfoot"><button class="btn l" onclick="closeModal()">Cerrar</button></div>', true);
+  o._rows = rows; o._c = c; window._ccView = { c, rows, saldo };
+}
+function cliPago(id) {
+  const c = cliById(id), s = S.saldos[id] || 0;
+  modal('<h2>Registrar pago de ' + esc(c.nombre) + '</h2><div class="alert a-info">Saldo actual: <b>' + money(s) + '</b></div><div class="fgrid"><div class="fg"><label>Importe cobrado</label><input id="pg-imp" type="number" step="0.01" min="0.01" value="' + (s > 0 ? s : '') + '"></div><div class="fg"><label>Medio de pago</label><select id="pg-med"><option>efectivo</option><option>transferencia</option><option>cheque</option><option>débito</option><option>crédito</option></select></div><div class="fg wf"><label>Concepto</label><input id="pg-con" placeholder="Pago a cuenta, Recibo Nº…"></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn g" id="pg-ok" onclick="cliPagoOk(\'' + id + '\')">Registrar cobro</button></div>');
+}
+async function cliPagoOk(id) {
+  const imp = parseFloat(val('pg-imp')); if (!(imp > 0)) return toast('Ingresá un importe válido', 'err');
+  await busy($('#pg-ok'), async () => { await rpc('registrar_pago', { p_cliente: id, p_importe: imp, p_medio: val('pg-med'), p_concepto: val('pg-con') }); await loadClientes(); closeModal(); closeModal(); toast('Cobro registrado', 'ok'); if (S.mod === 'clientes') cliList(); clienteVer(id); });
+}
+function cliEstado(id) {
+  const v = window._ccView; if (!v) return; const w = openPrintWin();
+  writePrint(w, 'Estado de cuenta - ' + v.c.nombre, '<div class="hd">' + negHeader() + '<div style="text-align:right"><div class="big">ESTADO DE CUENTA</div><div>' + new Date().toLocaleDateString('es-AR') + '</div></div></div><div class="box"><b>' + esc(v.c.nombre) + '</b><br>' + esc([v.c.cuit, v.c.condicion_iva, v.c.direccion].filter(Boolean).join(' · ')) + '</div>' +
+    '<table><thead><tr><th>Fecha</th><th>Concepto</th><th class="n">Debe</th><th class="n">Haber</th><th class="n">Saldo</th></tr></thead><tbody>' + v.rows.map(m => '<tr><td>' + fdate(m.fecha) + '</td><td>' + esc(m.concepto || '') + '</td><td class="n">' + (m.tipo === 'debe' ? money(m.importe) : '') + '</td><td class="n">' + (m.tipo === 'haber' ? money(m.importe) : '') + '</td><td class="n">' + money(m.saldo) + '</td></tr>').join('') + '</tbody></table><div class="tot"><div class="t"><span>SALDO</span><span>' + money(v.saldo) + '</span></div></div>');
+}
+
+function cobrarRemito(ventaId, resta, numero, cliId) {
+  modal('<h2>Cobrar remito N° ' + pad(numero, 8) + '</h2><div class="fgrid"><div class="fg"><label>Importe cobrado</label><input id="cr-imp" type="number" step="0.01" min="0.01" max="' + resta + '" value="' + resta + '"></div><div class="fg"><label>Forma de pago</label><select id="cr-med"><option>efectivo</option><option>transferencia</option><option>débito</option><option>crédito</option><option>cheque</option></select></div></div><div class="hint">Falta cobrar ' + money(resta) + '. Podés cobrar una parte; el resto queda pendiente. Se registra en la caja y baja la deuda del cliente.</div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn g" id="cr-ok">Registrar cobro</button></div>');
+  $('#cr-ok').onclick = () => busy($('#cr-ok'), async () => {
+    const imp = parseFloat(val('cr-imp')); if (!(imp > 0) || imp > resta + 0.005) return toast('Importe inválido (máximo ' + money(resta) + ')', 'err');
+    await rpc('cobrar_remito', { p_venta: ventaId, p_importe: imp, p_medio: val('cr-med') });
+    await loadClientes(); closeModal(); closeModal(); toast('Cobro registrado', 'ok'); if (S.mod === 'clientes') cliList(); clienteVer(cliId);
+  });
+}
+/* ===================== BÚSQUEDA DE ARTÍCULOS (compartida) ===================== */
+async function buscarArt(term, limit) {
+  const t = sanit(term); if (!t) return [];
+  let exact = [];
+  if (/^[\w\-./]+$/.test(t)) exact = await api('articulos?select=*&activo=eq.true&or=(codigo.ilike.' + q(t) + ',codigo_barras.eq.' + q(t) + ')&limit=5');
+  if (exact.length === 1) return exact;
+  const r = await api('articulos?select=*&activo=eq.true&order=descripcion.asc&limit=' + (limit || 15) + artFilter(t));
+  return exact.length ? exact.concat(r.filter(x => !exact.some(y => y.id === x.id))) : r;
+}
+const r3 = n => Math.round((+n || 0) * 1000) / 1000;
+const itemFromArt = (a, lis) => ({ articulo_id: a.id, codigo: a.codigo, descripcion: a.descripcion, unidad: a.unidad, cantidad: 1, precio_unit: +a['precio' + lis] || 0, descuento_pct: 0, iva_pct: +a.iva_pct, stock: +a.stock, precios: [+a.precio1, +a.precio2, +a.precio3] });
+const resHtml = (a, lis, fn) => '<button type="button" class="res" onclick="' + fn + '(\'' + a.id + '\')"><div><div class="d">' + esc(a.descripcion) + '</div><div class="m">' + esc(a.codigo) + (a.marca ? ' · ' + esc(a.marca) : '') + ' · stock ' + fnum(a.stock) + ' ' + esc(a.unidad) + (a.stock_bajo ? ' ⚠' : '') + '</div></div><div class="p">' + money(a['precio' + lis]) + '</div></button>';
+const artCache = {};
+
+/* ===================== VENTAS (MOSTRADOR) ===================== */
+const V = { items: [], cliente: '', lista: 1, desc: 0, cond: 'contado', medio: 'efectivo', res: [] };
+R.ventas = async () => {
+  if (!V.cliente) { const cf = S.clientes.find(c => c.nombre === 'Consumidor Final'); V.cliente = cf ? cf.id : ''; }
+  main('<div class="pvl"><div class="panel"><div class="ptit">🧾 Venta de mostrador</div><div class="srch" style="max-width:none;margin-bottom:10px">🔎<input id="v-q" autocomplete="off" placeholder="Escaneá el código de barras o escribí para buscar y presioná Enter" autofocus></div><div id="v-res" class="resl"><div class="vacio">Buscá un artículo para agregarlo al ticket.</div></div></div><div class="ticket" id="tk"></div></div>');
+  api('caja_turnos?select=id&cerrada_at=is.null&limit=1').then(r => { if (!r.length && S.mod === 'ventas') { const e = $('.pvl .panel .ptit'); if (e) e.insertAdjacentHTML('afterend', '<div class="alert a-warn" style="margin-bottom:10px">⚠️ La caja está cerrada: las ventas se registran igual, pero no entran en ningún turno. <a href="#" onclick="go(\'caja\');return false"><b>Abrir caja</b></a></div>'); } }).catch(() => { });
+  const inp = $('#v-q');
+  inp.addEventListener('input', debounce(async () => { const t = inp.value; if (t.trim().length < 2) { put('#v-res', '<div class="vacio">Buscá un artículo para agregarlo al ticket.</div>'); return; } try { const rr = await buscarArt(t, 20); if (inp.value !== t) return; V.res = rr; posRes(); } catch (e) { put('#v-res', '<div class="alert a-bad">' + esc(e.message) + '</div>'); } }, 250));
+  inp.addEventListener('keydown', async e => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const t = inp.value.trim(); if (!t) return;
+    try { const r = await buscarArt(t, 20); V.res = r; if (r.length) { posAdd(r[0].id); inp.value = ''; put('#v-res', ''); } else { posRes(); } } catch (er) { toast(er.message, 'err'); }
+  });
+  posTicket(); inp.focus();
+};
+function posRes() {
+  V.res.forEach(a => { artCache[a.id] = a; });
+  put('#v-res', V.res.length ? V.res.map(a => resHtml(a, V.lista, 'posAdd')).join('') : '<div class="vacio">No se encontró ningún artículo.</div>');
+}
+function posAdd(id) {
+  const a = artCache[id] || V.res.find(x => x.id === id); if (!a) return;
+  const ex = V.items.find(i => i.articulo_id === id);
+  if (ex) ex.cantidad = r3(ex.cantidad + 1); else V.items.push(itemFromArt(a, V.lista));
+  if (+a.stock <= 0) toast('⚠ ' + a.descripcion + ' no tiene stock cargado', '');
+  posTicket(); const i = $('#v-q'); if (i) i.focus();
+}
+function posCli(id) {
+  V.cliente = id; const c = cliById(id);
+  if (c) { V.lista = c.lista_precio || 1; V.desc = +c.descuento_pct || 0; V.items.forEach(i => { if (i.precios) i.precio_unit = i.precios[V.lista - 1]; }); if (c.nombre === 'Consumidor Final') V.cond = 'contado'; }
+  posTicket();
+}
+function posLista(n) { V.lista = +n; V.items.forEach(i => { if (i.precios) i.precio_unit = i.precios[V.lista - 1]; }); posTicket(); }
+function posSet(i, k, v) { const n = parseFloat(v); V.items[i][k] = isNaN(n) ? 0 : n; posTicket(); }
+function posQty(i, d) { const it = V.items[i]; it.cantidad = r3(it.cantidad + d); if (it.cantidad <= 0) V.items.splice(i, 1); posTicket(); }
+function posDel(i) { V.items.splice(i, 1); posTicket(); }
+function posClear() { V.items = []; V.desc = 0; posTicket(); }
+function posTicket() {
+  const t = calcTot(V.items, V.desc), cf = cliById(V.cliente) && cliById(V.cliente).nombre === 'Consumidor Final';
+  $('#tk').innerHTML = '<h3 class="cond" style="font-size:22px">Ticket</h3>' +
+    '<div class="fgrid" style="grid-template-columns:1fr 1fr;margin:8px 0"><div class="fg wf"><label>Cliente</label><select onchange="posCli(this.value)">' + optsCli(V.cliente) + '</select></div>' +
+    '<div class="fg"><label>Lista de precios</label><select onchange="posLista(this.value)">' + [1, 2, 3].map(n => '<option value="' + n + '"' + (V.lista === n ? ' selected' : '') + '>' + esc(lista(n)) + '</option>').join('') + '</select></div>' +
+    '<div class="fg"><label>Descuento %</label><input type="number" step="0.1" min="0" max="100" value="' + V.desc + '" onchange="V.desc=Math.min(100,Math.max(0,parseFloat(this.value)||0));posTicket()"></div></div>' +
+    '<div class="titems">' + (V.items.length ? V.items.map((i, n) => '<div class="tit"><div class="nm">' + esc(i.descripcion) + '<div class="hint">' + esc(i.codigo) + ' · IVA ' + fnum(i.iva_pct) + '%' + (i.stock != null && i.cantidad > i.stock ? ' · <span class="neg2">supera el stock (' + fnum(i.stock) + ')</span>' : '') + '</div></div><div class="n" style="font-weight:700;text-align:right">' + money(lineaTot(i)) + '</div>' +
+      '<div class="ctl"><button class="btn l sm" onclick="posQty(' + n + ',-1)">−</button><input class="q" type="number" step="0.001" value="' + i.cantidad + '" onchange="posSet(' + n + ',\'cantidad\',this.value)"><button class="btn l sm" onclick="posQty(' + n + ',1)">+</button><span class="hint">×</span><input type="number" step="0.01" value="' + i.precio_unit + '" onchange="posSet(' + n + ',\'precio_unit\',this.value)" title="Precio unitario sin IVA"><button class="btn l sm" style="margin-left:auto" onclick="posDel(' + n + ')">✕</button></div></div>').join('') : '<div class="vacio">El ticket está vacío</div>') + '</div>' +
+    '<div class="tot"><div class="trow"><span>Subtotal (sin IVA)</span><span>' + money(t.sub) + '</span></div>' + (t.desc ? '<div class="trow"><span>Descuento ' + fnum(V.desc, 2) + '%</span><span>−' + money(t.desc) + '</span></div>' : '') + Object.keys(t.rates).map(k => '<div class="trow"><span>IVA ' + fnum(k) + '%</span><span>' + money(t.rates[k]) + '</span></div>').join('') + '<div class="ttl"><span>TOTAL</span><span>' + money(t.total) + '</span></div></div>' +
+    '<div class="hint" style="margin-bottom:4px;font-weight:700;text-transform:uppercase;font-size:11px">Forma de pago</div><div class="seg" style="flex-wrap:wrap">' + ['efectivo', 'débito', 'crédito', 'transferencia', 'QR'].map(m => '<button class="' + (V.cond === 'contado' && V.medio === m ? 'act' : '') + '" onclick="V.cond=\'contado\';V.medio=\'' + m + '\';posTicket()">' + m + '</button>').join('') + '<button class="' + (V.cond === 'cuenta_corriente' ? 'act' : '') + '" ' + (cf ? 'disabled title="Elegí un cliente para vender en cuenta corriente"' : '') + ' onclick="V.cond=\'cuenta_corriente\';posTicket()">Cuenta corriente</button></div>' +
+    (V.cond === 'cuenta_corriente' ? '<div class="hint" style="margin-bottom:8px">Queda como remito pendiente de cobro. Saldo actual del cliente: <b>' + money(S.saldos[V.cliente] || 0) + '</b>' + (cliById(V.cliente) && cliById(V.cliente).limite_credito > 0 ? ' · Límite ' + money(cliById(V.cliente).limite_credito) : '') + '</div>' : '') +
+    '<div style="display:flex;gap:8px"><button class="btn l" onclick="posClear()" ' + (V.items.length ? '' : 'disabled') + '>Vaciar</button><button class="btn o big" style="flex:1" id="v-cobrar" onclick="posCobrar()" ' + (V.items.length ? '' : 'disabled') + '>' + (V.cond === 'contado' ? 'Cobrar ' : 'Registrar remito ') + money(t.total) + '</button></div>';
+}
+async function posCobrar() {
+  if (!V.items.length) return;
+  await busy($('#v-cobrar'), async () => {
+    const items = V.items.map(i => ({ articulo_id: i.articulo_id, codigo: i.codigo, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_pct || 0, iva_pct: i.iva_pct }));
+    const tot = calcTot(V.items, V.desc);
+    const r = await rpc('registrar_venta', { p_cliente: V.cliente || null, p_condicion: V.cond, p_medio: V.medio, p_descuento_pct: V.desc, p_items: items, p_presupuesto: null, p_notas: null });
+    const cli = cliById(V.cliente);
+    window._ultVenta = { numero: r.numero, total: r.total, items: V.items.map(i => ({ ...i })), tot, cli, cond: V.cond, medio: V.medio, desc: V.desc };
+    V.items = []; V.desc = 0; await loadClientes();
+    const o = modal('<h2>✅ Venta N° ' + pad(r.numero) + ' registrada</h2><div class="sgrid"><div class="scard g"><div class="slbl">Total</div><div class="snum">' + money(r.total) + '</div><div class="ssub">' + (window._ultVenta.cond === 'contado' ? 'Cobrado en ' + esc(window._ultVenta.medio) : 'Cargado a la cuenta corriente de ' + esc(cli ? cli.nombre : '')) + '</div></div></div><div class="mfoot"><button class="btn l" onclick="ventaPrint()">🖨️ Imprimir ticket</button><button class="btn o" onclick="closeModal();R.ventas()">Nueva venta</button></div>');
+  });
+}
+function ventaPrint() {
+  const v = window._ultVenta; if (!v) return; const w = openPrintWin();
+  writePrint(w, 'Ticket ' + v.numero, '<div class="c"><b style="font-size:15px">' + esc(S.neg.nombre || '') + '</b><br>' + esc(S.neg.direccion || '') + '<br>' + esc(S.neg.telefono || '') + (S.neg.cuit ? '<br>CUIT ' + esc(S.neg.cuit) : '') + '</div><div class="c" style="margin:6px 0">' + (v.cond === 'contado' ? 'TICKET' : 'REMITO') + ' N° ' + pad(v.numero) + '<br>' + new Date().toLocaleString('es-AR') + '</div>' + (v.cli && v.cli.nombre !== 'Consumidor Final' ? '<div>Cliente: ' + esc(v.cli.nombre) + '</div>' : '') +
+    '<table>' + v.items.map(i => '<tr><td colspan="2">' + esc(i.descripcion) + '</td></tr><tr><td>' + fnum(i.cantidad) + ' × ' + money(i.precio_unit * (1 + i.iva_pct / 100)) + '</td><td class="n">' + money(lineaTot(i) * (1 + i.iva_pct / 100)) + '</td></tr>').join('') + '</table>' +
+    '<div class="tot" style="width:100%"><div><span>Subtotal neto</span><span>' + money(v.tot.sub) + '</span></div>' + (v.tot.desc ? '<div><span>Descuento</span><span>−' + money(v.tot.desc) + '</span></div>' : '') + '<div><span>IVA</span><span>' + money(v.tot.iva) + '</span></div><div class="t"><span>TOTAL</span><span>' + money(v.total) + '</span></div></div><div class="leg c">Comprobante no válido como factura</div>', true);
+}
+
+/* ===================== PRESUPUESTOS / COTIZACIONES ===================== */
+const PF = { q: '', estado: '' };
+let P = null;
+const ESTADOS = ['borrador', 'enviado', 'aceptado', 'rechazado', 'facturado'];
+const estBadge = (p) => { const v = presVencido(p); const e = v ? 'vencido' : p.estado; const cl = { borrador: 'b-gray', enviado: 'b-info', aceptado: 'b-ok', rechazado: 'b-bad', facturado: 'b-ok', vencido: 'b-warn' }[e]; return '<span class="badge ' + cl + '">' + e + '</span>'; };
+const presVencido = p => ['borrador', 'enviado'].includes(p.estado) && (new Date(p.fecha).getTime() + p.validez_dias * 864e5 < Date.now());
+R.presupuestos = async arg => {
+  if (arg && (arg.nuevo || arg.id || arg.dup)) return peOpen(arg);
+  main('<div class="panel"><div class="ptit">📋 Presupuestos y cotizaciones <span class="sp"></span><button class="btn o" onclick="go(\'presupuestos\',{nuevo:true})">+ Nuevo presupuesto</button></div>' +
+    '<div class="brow"><div class="srch">🔎<input id="pl-q" placeholder="Buscar por cliente, obra o número" value="' + esc(PF.q) + '"></div><select id="pl-e" style="max-width:190px"><option value="">Todos los estados</option>' + ESTADOS.map(e => '<option' + (PF.estado === e ? ' selected' : '') + '>' + e + '</option>').join('') + '</select></div><div id="pl-list">' + loadingHtml + '</div></div>');
+  const re = () => { PF.q = val('pl-q'); PF.estado = val('pl-e'); presList(); };
+  $('#pl-q').addEventListener('input', debounce(re, 300)); $('#pl-e').addEventListener('change', re);
+  presList();
+};
+async function presList() {
+  let p = 'presupuestos?select=*&order=numero.desc&limit=150';
+  if (PF.estado) p += '&estado=eq.' + PF.estado;
+  const t = sanit(PF.q);
+  if (t) p += '&or=(' + (/^\d+$/.test(t) ? 'numero.eq.' + t + ',' : '') + 'cliente_nombre.ilike.*' + q(t) + '*,obra.ilike.*' + q(t) + '*)';
+  let rows; try { rows = await api(p); } catch (e) { put('#pl-list', '<div class="alert a-bad">' + esc(e.message) + '</div>'); return; }
+  put('#pl-list', rows.length ? '<div class="twrap"><table><thead><tr><th>N°</th><th>Tipo</th><th>Fecha</th><th>Cliente</th><th>Obra</th><th class="n">Total</th><th>Estado</th><th></th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td><b>' + pad(r.numero, 5) + '</b></td><td>' + (r.tipo === 'cotizacion' ? 'Cotización' : 'Presupuesto') + '</td><td>' + fdate(r.fecha) + '</td><td>' + esc(r.cliente_nombre || '—') + '</td><td>' + esc(r.obra || '') + '</td><td class="n"><b>' + money(r.total) + '</b></td><td>' + estBadge(r) + (r.estado !== 'facturado' ? ' <select onchange="presEstado(\'' + r.id + '\',this.value)" style="width:34px;padding:2px" title="Cambiar estado"><option value="">⋯</option>' + ['borrador', 'enviado', 'aceptado', 'rechazado'].map(e => '<option>' + e + '</option>').join('') + '</select>' : '') + '</td>' +
+      '<td style="white-space:nowrap"><button class="btn l sm" onclick="go(\'presupuestos\',{id:\'' + r.id + '\'})">✏️</button> <button class="btn l sm" onclick="presPrint(\'' + r.id + '\')" title="Imprimir / PDF">🖨️</button> <button class="btn l sm" onclick="presEnviar(\'' + r.id + '\')" title="Enviar por WhatsApp o mail">📲</button> <button class="btn l sm" onclick="go(\'presupuestos\',{dup:\'' + r.id + '\'})" title="Duplicar">📄</button> ' + (r.estado !== 'facturado' ? '<button class="btn sm" onclick="presVender(\'' + r.id + '\')">🧾 Vender</button> ' : '') + (['borrador', 'rechazado'].includes(r.estado) ? '<button class="btn l sm" onclick="presDel(\'' + r.id + '\')" title="Eliminar">🗑️</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Todavía no hay presupuestos. Armá el primero con el botón de arriba.</div>');
+}
+async function presEstado(id, e) { if (!e) return; try { await api('presupuestos?id=eq.' + id, { method: 'PATCH', body: { estado: e } }); presList(); } catch (er) { toast(er.message, 'err'); } }
+async function presDel(id) { if (!await ask('¿Eliminar este presupuesto?', 'Eliminar', true)) return; try { await api('presupuestos?id=eq.' + id, { method: 'DELETE' }); toast('Presupuesto eliminado', 'ok'); presList(); } catch (e) { toast(e.message, 'err'); } }
+async function presLoad(id) {
+  const h = (await api('presupuestos?id=eq.' + id + '&select=*'))[0];
+  const it = await api('presupuesto_items?presupuesto_id=eq.' + id + '&select=*&order=orden.asc');
+  return { h, it };
+}
+
+/* ---- Editor ---- */
+async function peOpen(arg) {
+  const cond = (S.neg.config && S.neg.config.condiciones_presupuesto) || 'Precios sujetos a variación sin previo aviso. Sujeto a disponibilidad de stock al momento de la compra.';
+  const valid = (S.neg.config && S.neg.config.validez_presupuesto_dias) || 15;
+  P = { id: null, numero: null, tipo: 'presupuesto', estado: 'borrador', cliente_id: '', cliente_nombre: '', cliente_cuit: '', cliente_condicion_iva: 'Responsable Inscripto', obra: '', validez_dias: valid, forma_pago: '', plazo_entrega: '', lista_precio: 1, descuento_pct: 0, condiciones: cond, notas: '', items: [] };
+  if (arg.id || arg.dup) {
+    const { h, it } = await presLoad(arg.id || arg.dup);
+    Object.assign(P, { tipo: h.tipo, cliente_id: h.cliente_id || '', cliente_nombre: h.cliente_nombre || '', cliente_cuit: h.cliente_cuit || '', cliente_condicion_iva: h.cliente_condicion_iva || 'Consumidor Final', obra: h.obra || '', validez_dias: h.validez_dias, forma_pago: h.forma_pago || '', plazo_entrega: h.plazo_entrega || '', lista_precio: h.lista_precio, descuento_pct: +h.descuento_pct, condiciones: h.condiciones || '', notas: h.notas || '' });
+    P.items = it.map(i => ({ articulo_id: i.articulo_id, codigo: i.codigo, descripcion: i.descripcion, unidad: i.unidad, cantidad: +i.cantidad, precio_unit: +i.precio_unit, descuento_pct: +i.descuento_pct, iva_pct: +i.iva_pct }));
+    if (arg.id) { P.id = h.id; P.numero = h.numero; P.estado = h.estado; }
+  } else if (arg.cliente) {
+    const c = cliById(arg.cliente); if (c) { P.cliente_id = c.id; P.cliente_nombre = c.nombre; P.cliente_cuit = c.cuit || ''; P.cliente_condicion_iva = c.condicion_iva || ''; P.lista_precio = c.lista_precio || 3; P.descuento_pct = +c.descuento_pct || 0; }
+  }
+  peRender();
+}
+function peRender() {
+  const noCli = !P.cliente_id;
+  main('<div class="panel"><div class="ptit"><button class="btn l sm" onclick="presBack()">← Volver</button> ' + (P.id ? (P.tipo === 'cotizacion' ? 'Cotización' : 'Presupuesto') + ' N° ' + pad(P.numero, 5) + ' ' + estBadge({ estado: P.estado, fecha: new Date().toISOString(), validez_dias: 999 }) : 'Nuevo presupuesto') + '</div>' +
+    '<div class="fgrid"><div class="fg"><label>Documento</label><select id="pe-tipo"><option value="presupuesto"' + (P.tipo === 'presupuesto' ? ' selected' : '') + '>Presupuesto</option><option value="cotizacion"' + (P.tipo === 'cotizacion' ? ' selected' : '') + '>Cotización</option></select></div>' +
+    '<div class="fg w2"><label>Cliente</label><select id="pe-cli" onchange="peCli(this.value)"><option value="">— Cliente ocasional (escribir datos) —</option>' + optsCli(P.cliente_id) + '</select></div>' +
+    '<div class="fg"><label>Lista de precios</label><select id="pe-lis" onchange="peLista(this.value)">' + [1, 2, 3].map(n => '<option value="' + n + '"' + (P.lista_precio === n ? ' selected' : '') + '>' + esc(lista(n)) + '</option>').join('') + '</select></div>' +
+    '<div class="fg w2"><label>Nombre / razón social</label><input id="pe-cnom" value="' + esc(P.cliente_nombre) + '"' + (noCli ? '' : ' readonly') + '></div><div class="fg"><label>CUIT</label><input id="pe-ccuit" value="' + esc(P.cliente_cuit) + '"' + (noCli ? '' : ' readonly') + '></div><div class="fg"><label>Condición IVA</label><select id="pe-civa">' + CONDIVA.map(v => '<option' + (v === P.cliente_condicion_iva ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>' +
+    '<div class="fg w2"><label>Obra / referencia</label><input id="pe-obra" value="' + esc(P.obra) + '" placeholder="Ej.: Edificio Av. Colón 1200"></div><div class="fg"><label>Validez (días)</label><input id="pe-val" type="number" min="1" value="' + P.validez_dias + '"></div><div class="fg"><label>Forma de pago</label><input id="pe-fp" value="' + esc(P.forma_pago) + '" placeholder="Contado, 30 días…"></div><div class="fg"><label>Plazo de entrega</label><input id="pe-pe" value="' + esc(P.plazo_entrega) + '" placeholder="48 hs"></div></div>' +
+    '<div class="ddwrap" style="margin:6px 0 10px"><div class="brow" style="margin:0"><div class="srch" style="max-width:none">🔎<input id="pe-q" autocomplete="off" placeholder="Buscar artículo para agregar (código o descripción)"></div><button class="btn l" onclick="peLibre()">+ Línea libre</button></div><div class="dd hidden" id="pe-dd"></div></div>' +
+    '<div id="pe-items"></div>' +
+    '<div class="g2" style="margin-top:12px"><div><div class="fg" style="margin-bottom:10px"><label>Condiciones (se imprimen en el documento)</label><textarea id="pe-cond">' + esc(P.condiciones) + '</textarea></div><div class="fg"><label>Notas internas (no se imprimen)</label><textarea id="pe-not">' + esc(P.notas) + '</textarea></div></div><div><div class="fg" style="max-width:200px;margin-bottom:8px"><label>Descuento general %</label><input id="pe-dto" type="number" step="0.1" min="0" max="100" value="' + P.descuento_pct + '" oninput="P.descuento_pct=parseFloat(this.value)||0;peTot()"></div><div class="tot" id="pe-tot"></div></div></div>' +
+    '<div class="mfoot"><button class="btn l" onclick="peSave(null,false)">💾 Guardar</button><button class="btn" onclick="peSave(\'enviado\',false)">📤 Guardar como enviado</button><button class="btn o" onclick="peSave(null,true)">🖨️ Guardar e imprimir / PDF</button><button class="btn g" onclick="peSave(null,false,true)">📲 Guardar y enviar</button></div></div>');
+  const qi = $('#pe-q');
+  qi.addEventListener('input', debounce(async () => { const t = qi.value.trim(); const dd = $('#pe-dd'); if (!dd) return; if (t.length < 2) { dd.classList.add('hidden'); return; } try { const r = await buscarArt(t, 12); if (!$('#pe-dd')) return; r.forEach(a => { artCache[a.id] = a; }); dd.innerHTML = r.length ? r.map(a => resHtml(a, P.lista_precio, 'peAdd')).join('') : '<div class="vacio">Sin resultados</div>'; dd.classList.remove('hidden'); } catch (e) { toast(e.message, 'err'); } }, 250));
+  qi.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const f = $('#pe-dd .res'); if (f) f.click(); } });
+  peItems();
+}
+function peCollect() {
+  if (!$('#pe-tipo')) return;
+  Object.assign(P, { tipo: val('pe-tipo'), cliente_nombre: val('pe-cnom').trim(), cliente_cuit: val('pe-ccuit').trim(), cliente_condicion_iva: val('pe-civa'), obra: val('pe-obra').trim(), validez_dias: parseInt(val('pe-val'), 10) || 15, forma_pago: val('pe-fp').trim(), plazo_entrega: val('pe-pe').trim(), condiciones: val('pe-cond'), notas: val('pe-not'), descuento_pct: parseFloat(val('pe-dto')) || 0 });
+}
+function presBack() { P = null; go('presupuestos'); }
+function peCli(id) {
+  P.cliente_id = id; const c = cliById(id);
+  if (c) { $('#pe-cnom').value = c.nombre; $('#pe-ccuit').value = c.cuit || ''; $('#pe-civa').value = c.condicion_iva || 'Consumidor Final'; $('#pe-cnom').readOnly = true; $('#pe-ccuit').readOnly = true; $('#pe-dto').value = c.descuento_pct || 0; P.descuento_pct = +c.descuento_pct || 0; $('#pe-lis').value = c.lista_precio || 1; peLista(c.lista_precio || 1); }
+  else { $('#pe-cnom').readOnly = false; $('#pe-ccuit').readOnly = false; peTot(); }
+}
+async function peLista(n) {
+  P.lista_precio = +n;
+  const faltan = P.items.filter(i => i.articulo_id && !i.precios).map(i => i.articulo_id);
+  if (faltan.length) { try { const r = await api('articulos?select=id,precio1,precio2,precio3&id=in.(' + faltan.join(',') + ')'); const m = {}; r.forEach(a => { m[a.id] = [+a.precio1, +a.precio2, +a.precio3]; }); P.items.forEach(i => { if (i.articulo_id && m[i.articulo_id]) i.precios = m[i.articulo_id]; }); } catch (e) { toast(e.message, 'err'); } }
+  let cam = 0; P.items.forEach(i => { if (i.precios) { i.precio_unit = i.precios[P.lista_precio - 1]; cam++; } });
+  peItems(); if (cam) toast('Precios actualizados a la lista ' + lista(P.lista_precio), 'ok');
+}
+function peAdd(id) {
+  const a = artCache[id]; if (!a) return;
+  const ex = P.items.find(i => i.articulo_id === id);
+  if (ex) ex.cantidad = r3(ex.cantidad + 1); else P.items.push(itemFromArt(a, P.lista_precio));
+  $('#pe-dd').classList.add('hidden'); $('#pe-q').value = ''; peItems(); $('#pe-q').focus();
+}
+function peLibre() { P.items.push({ articulo_id: null, codigo: '', descripcion: 'Concepto', unidad: 'un', cantidad: 1, precio_unit: 0, descuento_pct: 0, iva_pct: 21 }); peItems(); }
+function peItems() {
+  $('#pe-items').innerHTML = P.items.length ? '<div class="twrap"><table class="ed"><thead><tr><th>Código</th><th>Descripción</th><th>Un.</th><th class="n">Cant.</th><th class="n">Precio unit. (s/IVA)</th><th class="n">Desc. %</th><th>IVA</th><th class="n">Subtotal</th><th></th></tr></thead><tbody>' +
+    P.items.map((i, n) => '<tr><td>' + esc(i.codigo || '') + '</td><td><input value="' + esc(i.descripcion) + '" ' + (i.articulo_id ? 'readonly style="border-color:transparent;background:transparent"' : '') + ' oninput="P.items[' + n + '].descripcion=this.value"></td><td>' + esc(i.unidad || '') + '</td><td><input class="q" type="number" step="0.001" min="0" value="' + i.cantidad + '" oninput="peSet(' + n + ',\'cantidad\',this.value)"></td><td><input class="p" type="number" step="0.01" min="0" value="' + i.precio_unit + '" oninput="peSet(' + n + ',\'precio_unit\',this.value)"></td><td><input class="d" type="number" step="0.1" min="0" max="100" value="' + (i.descuento_pct || 0) + '" oninput="peSet(' + n + ',\'descuento_pct\',this.value)"></td><td><select onchange="peSet(' + n + ',\'iva_pct\',this.value)">' + [21, 10.5, 27, 0].map(v => '<option value="' + v + '"' + (+i.iva_pct === v ? ' selected' : '') + '>' + v + '%</option>').join('') + '</select></td><td class="n" id="pl-' + n + '"><b>' + money(lineaTot(i)) + '</b></td><td><button class="btn l sm" onclick="peDel(' + n + ')">✕</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Buscá artículos arriba para ir armando el presupuesto.</div>';
+  peTot();
+}
+function peSet(n, k, v) { const x = parseFloat(v); P.items[n][k] = isNaN(x) ? 0 : x; const c = $('#pl-' + n); if (c) c.innerHTML = '<b>' + money(lineaTot(P.items[n])) + '</b>'; peTot(); }
+function peDel(n) { P.items.splice(n, 1); peItems(); }
+function peTot() {
+  const t = calcTot(P.items, P.descuento_pct), e = $('#pe-tot'); if (!e) return;
+  e.innerHTML = '<div class="trow"><span>Subtotal neto</span><span>' + money(t.sub) + '</span></div>' + (t.desc ? '<div class="trow"><span>Descuento ' + fnum(P.descuento_pct, 2) + '%</span><span>−' + money(t.desc) + '</span></div>' : '') + Object.keys(t.rates).map(k => '<div class="trow"><span>IVA ' + fnum(k) + '%</span><span>' + money(t.rates[k]) + '</span></div>').join('') + '<div class="ttl"><span>TOTAL</span><span>' + money(t.total) + '</span></div>';
+}
+async function peSave(estado, imprimir, enviar) {
+  peCollect();
+  if (!P.items.length) return toast('Agregá al menos un artículo', 'err');
+  if (!P.cliente_id && !P.cliente_nombre) return toast('Elegí un cliente o escribí el nombre', 'err');
+  if (P.items.some(i => !(i.cantidad > 0))) return toast('Hay líneas con cantidad cero', 'err');
+  const w = imprimir ? openPrintWin() : null;
+  try {
+    const t = calcTot(P.items, P.descuento_pct);
+    const head = { tipo: P.tipo, validez_dias: P.validez_dias, cliente_id: P.cliente_id || null, cliente_nombre: P.cliente_nombre || null, cliente_cuit: P.cliente_cuit || null, cliente_condicion_iva: P.cliente_condicion_iva, obra: P.obra || null, forma_pago: P.forma_pago || null, plazo_entrega: P.plazo_entrega || null, estado: estado || P.estado || 'borrador', lista_precio: P.lista_precio, subtotal: t.sub, descuento_pct: P.descuento_pct, iva: t.iva, total: t.total, condiciones: P.condiciones || null, notas: P.notas || null };
+    if (P.id) { await api('presupuestos?id=eq.' + P.id, { method: 'PATCH', body: head }); await api('presupuesto_items?presupuesto_id=eq.' + P.id, { method: 'DELETE' }); }
+    else { head.negocio_id = S.neg.id; head.numero = 0; head.usuario_id = S.user.id; const r = await api('presupuestos', { method: 'POST', body: head, prefer: 'return=representation' }); P.id = r[0].id; P.numero = r[0].numero; }
+    P.estado = head.estado;
+    await api('presupuesto_items', { method: 'POST', body: P.items.map((i, n) => ({ negocio_id: S.neg.id, presupuesto_id: P.id, articulo_id: i.articulo_id || null, codigo: i.codigo || null, descripcion: i.descripcion, unidad: i.unidad || 'un', cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_pct || 0, iva_pct: i.iva_pct, subtotal: lineaTot(i), orden: n })) });
+    toast((P.tipo === 'cotizacion' ? 'Cotización' : 'Presupuesto') + ' N° ' + pad(P.numero, 5) + ' guardado', 'ok');
+    if (imprimir) writePrint(w, 'Presupuesto ' + P.numero, presDoc({ ...head, numero: P.numero, fecha: new Date().toISOString() }, P.items));
+    peRender();
+    if (enviar) presEnviar(P.id);
+  } catch (e) { if (w) w.close(); toast(e.message, 'err'); }
+}
+function presDoc(p, items) {
+  const t = calcTot(items, p.descuento_pct), cot = p.tipo === 'cotizacion', hasta = new Date(new Date(p.fecha).getTime() + p.validez_dias * 864e5);
+  return '<div class="hd">' + negHeader() + '<div style="text-align:right"><div class="big">' + (cot ? 'COTIZACIÓN' : 'PRESUPUESTO') + '</div><div style="font-size:16px;font-weight:700">N° ' + pad(p.numero, 5) + '</div><div>Fecha: ' + fdate(p.fecha) + '</div><div>Válido hasta: ' + hasta.toLocaleDateString('es-AR') + '</div></div></div>' +
+    '<div class="box"><b>' + esc(p.cliente_nombre || '') + '</b>' + (p.cliente_cuit ? ' · CUIT/DNI ' + esc(p.cliente_cuit) : '') + (p.cliente_condicion_iva ? ' · ' + esc(p.cliente_condicion_iva) : '') + (p.obra ? '<br>Obra / referencia: <b>' + esc(p.obra) + '</b>' : '') + ((p.forma_pago || p.plazo_entrega) ? '<br>' + (p.forma_pago ? 'Forma de pago: ' + esc(p.forma_pago) + '  ' : '') + (p.plazo_entrega ? 'Plazo de entrega: ' + esc(p.plazo_entrega) : '') : '') + '</div>' +
+    '<table><thead><tr><th>Código</th><th>Descripción</th><th>Un.</th><th class="n">Cant.</th><th class="n">P. unit.</th><th class="n">Desc.</th><th class="n">IVA</th><th class="n">Subtotal</th></tr></thead><tbody>' + items.map(i => '<tr><td>' + esc(i.codigo || '') + '</td><td>' + esc(i.descripcion) + '</td><td>' + esc(i.unidad || '') + '</td><td class="n">' + fnum(i.cantidad) + '</td><td class="n">' + money(i.precio_unit) + '</td><td class="n">' + (i.descuento_pct ? fnum(i.descuento_pct, 2) + '%' : '') + '</td><td class="n">' + fnum(i.iva_pct) + '%</td><td class="n">' + money(lineaTot(i)) + '</td></tr>').join('') + '</tbody></table>' +
+    '<div class="tot"><div><span>Subtotal neto</span><span>' + money(t.sub) + '</span></div>' + (t.desc ? '<div><span>Descuento ' + fnum(p.descuento_pct, 2) + '%</span><span>−' + money(t.desc) + '</span></div>' : '') + Object.keys(t.rates).map(k => '<div><span>IVA ' + fnum(k) + '%</span><span>' + money(t.rates[k]) + '</span></div>').join('') + '<div class="t"><span>TOTAL</span><span>' + money(t.total) + '</span></div></div>' +
+    (p.condiciones ? '<div class="leg"><b>Condiciones:</b> ' + esc(p.condiciones).replace(/\n/g, '<br>') + '</div>' : '') + '<div class="leg"><b>Documento no válido como factura.</b> Los precios y el stock están sujetos a confirmación al momento de concretar la operación.</div><div style="margin-top:46px;display:flex;justify-content:space-between"><div style="border-top:1px solid #111;width:220px;text-align:center;padding-top:3px">Firma y aclaración</div><div style="border-top:1px solid #111;width:220px;text-align:center;padding-top:3px">' + esc(S.neg.nombre || '') + '</div></div>';
+}
+async function presPrint(id) {
+  const w = openPrintWin();
+  try { const { h, it } = await presLoad(id); writePrint(w, 'Presupuesto ' + h.numero, presDoc(h, it.map(i => ({ ...i, cantidad: +i.cantidad, precio_unit: +i.precio_unit, descuento_pct: +i.descuento_pct, iva_pct: +i.iva_pct })))); } catch (e) { if (w) w.close(); toast(e.message, 'err'); }
+}
+async function presVender(id) {
+  const { h, it } = await presLoad(id); const c = h.cliente_id ? cliById(h.cliente_id) : null; const cc = c && c.nombre !== 'Consumidor Final';
+  modal('<h2>Vender presupuesto N° ' + pad(h.numero, 5) + '</h2><div class="alert a-info">Se registra la venta por <b>' + money(h.total) + '</b> y se descuenta el stock de los artículos. El presupuesto pasa a "facturado".</div><div class="fgrid"><div class="fg wf"><label>Forma de pago</label><select id="pv-fp">' + (cc ? '<option value="cc" selected>Cuenta corriente de ' + esc(c.nombre) + ' (queda debiendo)</option>' : '') + ['efectivo', 'transferencia', 'débito', 'crédito', 'cheque'].map((m, k) => '<option value="' + m + '"' + (!cc && !k ? ' selected' : '') + '>' + m.charAt(0).toUpperCase() + m.slice(1) + '</option>').join('') + '</select><div class="hint">Si queda en cuenta corriente, después la cobrás desde la ficha del cliente.</div></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="pv-ok">Registrar venta</button></div>');
+  $('#pv-ok').onclick = () => busy($('#pv-ok'), async () => {
+    const r = await rpc('registrar_venta', { p_cliente: h.cliente_id || null, p_condicion: val('pv-fp') === 'cc' ? 'cuenta_corriente' : 'contado', p_medio: val('pv-fp') === 'cc' ? 'efectivo' : val('pv-fp'), p_descuento_pct: +h.descuento_pct, p_items: it.map(i => ({ articulo_id: i.articulo_id, codigo: i.codigo, descripcion: i.descripcion, cantidad: +i.cantidad, precio_unit: +i.precio_unit, descuento_pct: +i.descuento_pct, iva_pct: +i.iva_pct })), p_presupuesto: id, p_notas: 'Presupuesto N° ' + h.numero });
+    await loadClientes(); closeModal(); toast('Venta N° ' + pad(r.numero) + ' registrada', 'ok'); presList();
+  });
+}
+
+/* ---- Enviar por WhatsApp / mail ---- */
+function waNumero(t) {
+  let d = String(t || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('54')) return d;
+  d = d.replace(/^0+/, '');
+  if (d.length === 12) { for (const a of [2, 3, 4]) { if (d.slice(a, a + 2) === '15') { d = d.slice(0, a) + d.slice(a + 2); break; } } }
+  if (d.length === 10) return '549' + d;
+  return '54' + d;
+}
+function presTexto(h, it) {
+  const t = calcTot(it.map(i => ({ ...i, cantidad: +i.cantidad, precio_unit: +i.precio_unit, descuento_pct: +i.descuento_pct, iva_pct: +i.iva_pct })), +h.descuento_pct);
+  const cot = h.tipo === 'cotizacion', hasta = new Date(new Date(h.fecha).getTime() + h.validez_dias * 864e5).toLocaleDateString('es-AR');
+  const lin = it.slice(0, 15).map(i => '• ' + fnum(i.cantidad) + ' x ' + i.descripcion).join('\n') + (it.length > 15 ? '\n• … y ' + (it.length - 15) + ' ítems más' : '');
+  return 'Hola' + (h.cliente_nombre ? ' ' + h.cliente_nombre : '') + '! Te paso ' + (cot ? 'la cotización' : 'el presupuesto') + ' N° ' + pad(h.numero, 5) + ' de ' + (S.neg.nombre || '') + (h.obra ? ' (obra: ' + h.obra + ')' : '') + ':\n\n' + lin + '\n\nTOTAL (IVA incluido): ' + money(t.total) + '\nVálido hasta el ' + hasta + '.' + (h.forma_pago ? '\nForma de pago: ' + h.forma_pago : '') + (h.plazo_entrega ? '\nPlazo de entrega: ' + h.plazo_entrega : '') + '\n\nCualquier consulta, avisanos.' + (S.neg.telefono ? '\n' + S.neg.telefono : '');
+}
+async function presEnviar(id) {
+  let h, it; try { ({ h, it } = await presLoad(id)); } catch (e) { return toast(e.message, 'err'); }
+  const c = h.cliente_id ? cliById(h.cliente_id) : null;
+  const tit = (h.tipo === 'cotizacion' ? 'Cotización' : 'Presupuesto') + ' N° ' + pad(h.numero, 5) + ' - ' + (S.neg.nombre || '');
+  modal('<h2>📲 Enviar ' + (h.tipo === 'cotizacion' ? 'cotización' : 'presupuesto') + ' N° ' + pad(h.numero, 5) + '</h2><div class="fgrid"><div class="fg"><label>WhatsApp del cliente</label><input id="se-tel" inputmode="tel" value="' + esc((c && c.telefono) || '') + '" placeholder="Ej: 351 555 1234"></div><div class="fg"><label>Email del cliente</label><input id="se-mail" type="email" value="' + esc((c && c.email) || '') + '" placeholder="cliente@correo.com"></div><div class="fg wf"><label>Mensaje (podés editarlo)</label><textarea id="se-txt" rows="11">' + esc(presTexto(h, it)) + '</textarea></div></div>' +
+    '<div class="hint">Se abre la aplicación con el mensaje listo; solo tenés que tocar enviar. Si querés mandar el PDF, primero usá "Imprimir / PDF" → "Guardar como PDF" y adjuntalo.</div>' +
+    '<div class="mfoot" style="flex-wrap:wrap"><button class="btn l" onclick="presPrint(\'' + id + '\')">🖨️ PDF</button><button class="btn" id="se-gm">✉️ Gmail</button><button class="btn" id="se-ml">📧 Mail</button><button class="btn g" id="se-wa">💬 WhatsApp</button></div>');
+  const marcar = async () => { if (h.estado === 'borrador') { try { await api('presupuestos?id=eq.' + id, { method: 'PATCH', body: { estado: 'enviado' } }); h.estado = 'enviado'; if (S.mod === 'presupuestos') { if (typeof P !== 'undefined' && P) P.estado = 'enviado'; } } catch (e) { /* no crítico */ } } };
+  $('#se-wa').onclick = () => { const n = waNumero(val('se-tel')); window.open('https://wa.me/' + n + '?text=' + encodeURIComponent(val('se-txt')), '_blank', 'noopener'); marcar(); };
+  $('#se-gm').onclick = () => { const m = val('se-mail').trim(); window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(m) + '&su=' + encodeURIComponent(tit) + '&body=' + encodeURIComponent(val('se-txt')), '_blank', 'noopener'); marcar(); };
+  $('#se-ml').onclick = () => { const m = val('se-mail').trim(); location.href = 'mailto:' + encodeURIComponent(m).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(tit) + '&body=' + encodeURIComponent(val('se-txt').replace(/\n/g, '\r\n')); marcar(); };
+}
+/* ===================== PRECIOS ===================== */
+async function fetchAll(path, step) {
+  step = step || 1000; let out = [], from = 0;
+  for (; ;) { const r = await api(path + '&order=id.asc', { range: from + '-' + (from + step - 1) }); out = out.concat(r); if (r.length < step || out.length > 60000) break; from += step; }
+  return out;
+}
+function loadScript(src) {
+  return new Promise((ok, no) => { if (document.querySelector('script[src="' + src + '"]')) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('No se pudo cargar ' + src + '. Revisá tu conexión a internet.')); document.head.appendChild(s); });
+}
+const libXLSX = async () => { if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); };
+const libPDF = async () => { if (!window.pdfjsLib) { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } };
+const normCode = s => String(s == null ? '' : s).toUpperCase().replace(/[\s\-_.\/]/g, '').replace(/^0+/, '');
+const normDesc = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+const colLetter = n => { let s = ''; n++; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+
+const PR = { tab: 'lista', prov: '', desc: 0, iva: false, fname: '', fmt: '', raw: null, sheets: null, sheet: '', hdr: 0, cc: -1, dc: -1, pc: -1, pdf: null, pdfPos: 'last', pdfCode: true, rows: [], filtro: 'cambian', crear: false, ultima: null };
+R.precios = async arg => {
+  if (arg && arg.prov) { PR.prov = arg.prov; PR.tab = 'lista'; }
+  prRender();
+};
+function prRender() {
+  main('<div class="panel"><div class="ptit">💲 Actualización de precios</div><div class="tabs2"><button class="' + (PR.tab === 'lista' ? 'act' : '') + '" onclick="PR.tab=\'lista\';prRender()">📄 Cargar lista de proveedor</button><button class="' + (PR.tab === 'masivo' ? 'act' : '') + '" onclick="PR.tab=\'masivo\';prRender()">📈 Ajuste masivo por %</button><button class="' + (PR.tab === 'hist' ? 'act' : '') + '" onclick="PR.tab=\'hist\';prRender()">🕘 Historial y deshacer</button></div><div id="pr-body"></div></div>');
+  ({ lista: prListaUI, masivo: prMasivoUI, hist: prHistUI }[PR.tab])();
+}
+
+/* ---------- Ajuste masivo ---------- */
+function prMasivoUI() {
+  $('#pr-body').innerHTML = '<div class="alert a-info">Sube o baja <b>de una vez</b> el costo y los 3 precios de venta de un grupo de artículos. Útil cuando el proveedor avisa un aumento general antes de mandarte la lista nueva. Siempre podés <b>deshacerlo</b> desde el historial.</div>' +
+    '<div class="fgrid"><div class="fg"><label>Proveedor</label><select id="m-prov">' + optsProv(PR.prov, 'Todos los proveedores') + '</select></div><div class="fg"><label>Categoría</label><select id="m-cat">' + optsCat('', 'Todas las categorías') + '</select></div><div class="fg"><label>Marca (opcional)</label><input id="m-mar" placeholder="Ej.: Stanley"></div><div class="fg"><label>Porcentaje (negativo = baja)</label><input id="m-pct" type="number" step="0.1" placeholder="Ej.: 12.5"></div></div>' +
+    '<div class="brow"><button class="btn l" onclick="prMasivoCount()">Ver cuántos artículos afecta</button><button class="btn o" id="m-ok" onclick="prMasivoApply()">Aplicar ajuste</button></div><div id="m-info"></div>';
+}
+function prMasivoQuery() {
+  let p = 'articulos?select=id&activo=eq.true&limit=1';
+  if (val('m-prov')) p += '&proveedor_id=eq.' + val('m-prov'); if (val('m-cat')) p += '&categoria_id=eq.' + val('m-cat'); const m = sanit(val('m-mar')); if (m) p += '&marca=eq.' + q(m);
+  return p;
+}
+async function prMasivoCount() { try { const r = await api(prMasivoQuery(), { count: true, range: '0-0' }); $('#m-info').innerHTML = '<div class="alert a-ok">Se modificarían <b>' + (r.total == null ? '?' : r.total) + ' artículos</b>.</div>'; } catch (e) { toast(e.message, 'err'); } }
+async function prMasivoApply() {
+  const pct = parseFloat(val('m-pct')); if (!pct || pct <= -90 || pct > 500) return toast('Ingresá un porcentaje válido (entre -90 y 500)', 'err');
+  let total; try { total = (await api(prMasivoQuery(), { count: true, range: '0-0' })).total; } catch (e) { return toast(e.message, 'err'); }
+  if (!total) return toast('Ese filtro no incluye ningún artículo', 'err');
+  if (!await ask('Vas a ' + (pct > 0 ? 'subir' : 'bajar') + ' un ' + Math.abs(pct) + '% el costo y los precios de ' + total + ' artículos.\nPodés deshacerlo desde el historial.', 'Aplicar ajuste')) return;
+  await busy($('#m-ok'), async () => {
+    const r = await rpc('aumento_masivo', { p_proveedor: val('m-prov') || null, p_categoria: val('m-cat') || null, p_pct: pct, p_marca: sanit(val('m-mar')) || null });
+    $('#m-info').innerHTML = '<div class="alert a-ok">✅ Listo: se actualizaron <b>' + r.actualizados + ' artículos</b>. <button class="btn l sm" onclick="PR.tab=\'hist\';prRender()">Ver historial / deshacer</button></div>';
+  });
+}
+
+/* ---------- Historial ---------- */
+async function prHistUI() {
+  put('#pr-body', loadingHtml);
+  const rows = await api('listas_proveedor_cargas?select=*&order=created_at.desc&limit=60');
+  put('#pr-body', rows.length ? '<div class="twrap"><table><thead><tr><th>Fecha</th><th>Origen</th><th>Proveedor</th><th>Resultado</th><th>Estado</th><th></th></tr></thead><tbody>' + rows.map(r => {
+    const s = r.resumen || {}; const res = r.formato === 'masivo' ? (s.actualizados || 0) + ' artículos' : (s.actualizados || 0) + ' actualizados · ' + (s.sin_cambio || 0) + ' sin cambio · ' + (s.nuevos || 0) + ' nuevos';
+    return '<tr><td>' + fdt(r.created_at) + '</td><td>' + esc(r.archivo_nombre || '') + ' <span class="badge b-gray">' + esc(r.formato || '') + '</span></td><td>' + esc(provNom(r.proveedor_id) || '—') + '</td><td>' + res + '</td><td><span class="badge ' + (r.estado === 'aplicada' ? 'b-ok' : 'b-gray') + '">' + r.estado + '</span></td><td>' + (r.estado === 'aplicada' ? '<button class="btn l sm" onclick="prUndo(\'' + r.id + '\')">↩ Deshacer</button>' : '') + '</td></tr>';
+  }).join('') + '</tbody></table></div>' : '<div class="vacio">Todavía no hubo actualizaciones de precios.</div>');
+}
+async function prUndo(id) {
+  if (!await ask('Esto vuelve el costo y los precios de los artículos de esta carga a como estaban antes. Si después de la carga cambiaste algún precio a mano, también se pisa.', 'Deshacer carga', true)) return;
+  try { const r = await rpc('deshacer_carga', { p_carga: id }); toast('Se revirtieron ' + r.revertidos + ' artículos', 'ok'); prHistUI(); } catch (e) { toast(e.message, 'err'); }
+}
+
+/* ---------- Cargar lista de proveedor (Excel / CSV / PDF) ---------- */
+function prListaUI() {
+  const prov = S.provs.find(p => p.id === PR.prov);
+  $('#pr-body').innerHTML = '<div class="alert a-info">Subí la lista que te mandó el proveedor (<b>Excel, CSV o PDF</b>). El sistema la lee, busca cada artículo por código y te muestra cuánto sube o baja antes de aplicar nada.</div>' +
+    '<div class="fgrid"><div class="fg"><label>1. Proveedor *</label><select id="l-prov" onchange="prProv(this.value)">' + optsProv(PR.prov, '— Elegí un proveedor —') + '</select></div>' +
+    '<div class="fg"><label>Descuento sobre su lista %</label><input id="l-desc" type="number" step="0.01" min="0" max="99" value="' + PR.desc + '" onchange="PR.desc=parseFloat(this.value)||0;prMatch()"></div>' +
+    '<div class="fg" style="justify-content:end"><label style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px"><input type="checkbox" id="l-iva"' + (PR.iva ? ' checked' : '') + ' onchange="PR.iva=this.checked;prMatch()"> Los precios de la lista ya incluyen IVA</label></div></div>' +
+    '<div class="dz" id="l-dz"><div style="font-size:34px">📄</div><b>2. Arrastrá la lista acá o hacé clic para elegirla</b><div class="hint">Excel (.xlsx, .xls), CSV o PDF' + (PR.fname ? ' · Cargada: <b>' + esc(PR.fname) + '</b>' : '') + '</div></div><input type="file" id="l-file" accept=".xlsx,.xls,.csv,.pdf,.txt" class="hidden">' +
+    '<div id="l-map"></div><div id="l-prev"></div>';
+  const dz = $('#l-dz'), fi = $('#l-file');
+  dz.onclick = () => { if (!PR.prov) return toast('Primero elegí el proveedor', 'err'); fi.click(); };
+  fi.onchange = () => { if (fi.files[0]) prFile(fi.files[0]); };
+  ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('over'); }));
+  dz.addEventListener('drop', ev => { if (!PR.prov) return toast('Primero elegí el proveedor', 'err'); const f = ev.dataTransfer.files[0]; if (f) prFile(f); });
+  if (prov && !PR.fname) { PR.desc = +prov.descuento_base_pct || 0; $('#l-desc').value = PR.desc; }
+  if (PR.raw || PR.pdf) { prMapUI(); prMatch(); }
+}
+function prProv(id) { PR.prov = id; const p = S.provs.find(x => x.id === id); PR.desc = p ? +p.descuento_base_pct || 0 : 0; $('#l-desc').value = PR.desc; if (PR.rows.length) prMatch(); }
+function parseCSV(text) {
+  const first = text.split(/\r?\n/).slice(0, 5).join('\n');
+  const cnt = c => (first.match(new RegExp(c === '\t' ? '\\t' : '\\' + c, 'g')) || []).length;
+  const sep = [';', ',', '\t'].sort((a, b) => cnt(b) - cnt(a))[0];
+  const out = []; let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += ch; }
+    else if (ch === '"') inQ = true;
+    else if (ch === sep) { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); out.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if (cur !== '' || row.length) { row.push(cur); out.push(row); }
+  return out;
+}
+async function prFile(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  PR.fname = f.name; PR.raw = null; PR.pdf = null; PR.sheets = null; PR.rows = [];
+  const dz = $('#l-dz'); dz.innerHTML = '<div style="font-size:30px">⏳</div><b>Leyendo ' + esc(f.name) + '…</b>';
+  try {
+    if (ext === 'pdf') {
+      PR.fmt = 'pdf'; await libPDF();
+      const doc = await window.pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; const lines = [];
+      for (let n = 1; n <= doc.numPages; n++) {
+        const tc = await (await doc.getPage(n)).getTextContent(); const its = tc.items.filter(i => i.str && i.str.trim()).map(i => ({ s: i.str, x: i.transform[4], y: i.transform[5] }));
+        its.sort((a, b) => b.y - a.y || a.x - b.x); let cur = null;
+        its.forEach(i => { if (cur && Math.abs(cur.y - i.y) <= 2.5) cur.p.push(i); else { cur = { y: i.y, p: [i] }; lines.push(cur); } });
+      }
+      PR.pdf = lines.map(l => l.p.sort((a, b) => a.x - b.x).map(i => i.s.trim()).join(' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (!PR.pdf.length) throw new Error('El PDF no tiene texto seleccionable (parece una imagen escaneada). Pedile al proveedor el Excel o un PDF exportado desde su sistema.');
+      prRows();
+    } else if (ext === 'csv' || ext === 'txt') {
+      PR.fmt = 'csv'; const buf = await f.arrayBuffer(); let t = new TextDecoder('utf-8').decode(buf); if (t.indexOf('�') >= 0) t = new TextDecoder('windows-1252').decode(buf);
+      PR.raw = parseCSV(t); prAuto();
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      PR.fmt = 'xlsx'; await libXLSX(); const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      PR.sheets = wb; PR.sheet = wb.SheetNames[0]; prSheet();
+    } else throw new Error('Formato no soportado. Subí un Excel, CSV o PDF.');
+    prListaUI();
+  } catch (e) { toast(e.message, 'err'); PR.fname = ''; prListaUI(); }
+}
+function prSheet() { const ws = PR.sheets.Sheets[PR.sheet]; PR.raw = window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }); prAuto(); }
+function prAuto() {
+  const raw = PR.raw; let h = 0, best = -1;
+  for (let i = 0; i < Math.min(40, raw.length); i++) { const r = raw[i].map(c => String(c).toLowerCase()); const sc = (r.some(c => /c[oó]d|sku|ref/.test(c)) ? 2 : 0) + (r.some(c => /precio|costo|importe|lista/.test(c)) ? 2 : 0) + (r.some(c => /descr|detalle|producto|art[ií]culo|nombre/.test(c)) ? 1 : 0); if (sc > best) { best = sc; h = i; } if (sc >= 5) break; }
+  PR.hdr = best > 0 ? h : 0; prCols();
+}
+function prCols() {
+  const hd = (PR.raw[PR.hdr] || []).map(c => String(c).toLowerCase().trim());
+  const find = (re, not) => hd.findIndex((c, i) => c && re.test(c) && !(not && not.test(c)));
+  PR.cc = find(/c[oó]d|sku|ref/); PR.dc = find(/descr|detalle|producto|nombre|art[ií]culo/, /c[oó]d/);
+  PR.pc = find(/precio|costo|importe|lista|p\.? ?unit/, /iva|final|c\/ ?iva|con iva/); if (PR.pc < 0) PR.pc = find(/precio|costo|importe|lista|p\.? ?unit/);
+  prRows();
+}
+function prRows() {
+  const out = [];
+  if (PR.pdf) {
+    const numRe = /^\$?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?$|^\$?\d+(?:[.,]\d{1,2})?$/;
+    PR.pdf.forEach(line => {
+      const tk = line.split(' '); const cand = []; tk.forEach((t, i) => { if (i === 0 && PR.pdfCode) return; if (numRe.test(t) && !isNaN(parseNum(t))) cand.push(i); });
+      if (!cand.length) return;
+      const pi = PR.pdfPos === 'first' ? cand[0] : PR.pdfPos === 'prev' ? cand[Math.max(0, cand.length - 2)] : cand[cand.length - 1];
+      const precio = parseNum(tk[pi]); if (!(precio > 0)) return;
+      let codigo = '', ini = 0; if (PR.pdfCode && /\d/.test(tk[0]) && tk[0].length <= 22 && pi > 0) { codigo = tk[0]; ini = 1; }
+      out.push({ codigo, descripcion: tk.slice(ini, pi).join(' '), precio });
+    });
+  } else if (PR.raw) {
+    for (let i = PR.hdr + 1; i < PR.raw.length; i++) {
+      const r = PR.raw[i]; const precio = parseNum(PR.pc >= 0 ? r[PR.pc] : NaN); const codigo = PR.cc >= 0 ? String(r[PR.cc]).trim() : ''; const descripcion = PR.dc >= 0 ? String(r[PR.dc]).trim() : '';
+      if (precio > 0 && (codigo || descripcion)) out.push({ codigo, descripcion, precio });
+    }
+  }
+  PR.rows = out;
+}
+function prMapUI() {
+  const el = $('#l-map'); if (!el) return;
+  if (PR.pdf) {
+    el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Cómo leer el PDF</div><div class="fgrid"><div class="fg"><label>El precio es…</label><select onchange="PR.pdfPos=this.value;prRows();prMatch()"><option value="last"' + (PR.pdfPos === 'last' ? ' selected' : '') + '>El último número de la línea</option><option value="prev"' + (PR.pdfPos === 'prev' ? ' selected' : '') + '>El anteúltimo número</option><option value="first"' + (PR.pdfPos === 'first' ? ' selected' : '') + '>El primer número (después del código)</option></select></div><div class="fg" style="justify-content:end"><label style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px"><input type="checkbox"' + (PR.pdfCode ? ' checked' : '') + ' onchange="PR.pdfCode=this.checked;prRows();prMatch()"> La primera palabra de cada línea es el código</label></div></div><div class="hint">Se leyeron ' + PR.pdf.length + ' líneas de texto. Ejemplo: <i>' + esc(PR.pdf.slice(0, 3).join(' | ').slice(0, 220)) + '</i></div></div>';
+  } else {
+    const head = PR.raw[PR.hdr] || []; const opts = sel => '<option value="-1">— No usar —</option>' + head.map((c, i) => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + colLetter(i) + ' · ' + esc(String(c).slice(0, 30) || '(vacía)') + '</option>').join('');
+    el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Revisá las columnas</div><div class="fgrid">' +
+      (PR.sheets && PR.sheets.SheetNames.length > 1 ? '<div class="fg"><label>Hoja</label><select onchange="PR.sheet=this.value;prSheet();prMapUI();prMatch()">' + PR.sheets.SheetNames.map(n => '<option' + (n === PR.sheet ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '') +
+      '<div class="fg"><label>Fila de títulos</label><input type="number" min="1" value="' + (PR.hdr + 1) + '" onchange="PR.hdr=Math.max(0,(parseInt(this.value,10)||1)-1);prCols();prMapUI();prMatch()"></div><div class="fg"><label>Columna del código</label><select onchange="PR.cc=+this.value;prRows();prMatch()">' + opts(PR.cc) + '</select></div><div class="fg"><label>Columna de la descripción</label><select onchange="PR.dc=+this.value;prRows();prMatch()">' + opts(PR.dc) + '</select></div><div class="fg"><label>Columna del precio *</label><select onchange="PR.pc=+this.value;prRows();prMatch()">' + opts(PR.pc) + '</select></div></div></div>';
+  }
+}
+async function prMatch() {
+  const box = $('#l-prev'); if (!box) return;
+  if (!PR.prov) { box.innerHTML = ''; return; }
+  if (!PR.rows.length) { box.innerHTML = '<div class="alert a-warn" style="margin-top:12px">No se pudo leer ningún precio con esa configuración. Probá cambiando las columnas o la forma de leer el precio.</div>'; return; }
+  box.innerHTML = '<div class="vacio">Comparando con tu catálogo…</div>';
+  const clave = PR.fname + '|' + PR.prov + '|' + PR.desc + '|' + PR.iva + '|' + PR.rows.length; PR._clave = clave;
+  try {
+    const [links, arts] = await Promise.all([fetchAll('articulo_proveedor?select=codigo_proveedor,articulo_id&proveedor_id=eq.' + PR.prov), fetchAll('articulos?select=id,codigo,descripcion,costo,precio1,iva_pct&activo=eq.true')]);
+    const byId = {}, byCode = {}, byLink = {}, byDesc = {}; arts.forEach(a => { byId[a.id] = a; byCode[normCode(a.codigo)] = a; byDesc[normDesc(a.descripcion)] = a; }); links.forEach(l => { if (byId[l.articulo_id]) byLink[normCode(l.codigo_proveedor)] = byId[l.articulo_id]; });
+    if (PR._clave !== clave || !$('#l-prev')) return;
+    const seen = {};
+    PR.rows.forEach(r => {
+      const nc = normCode(r.codigo); const a = (nc && (byLink[nc] || byCode[nc])) || byDesc[normDesc(r.descripcion)] || null; r.art = a;
+      const iva = a ? +a.iva_pct : 21; r.nuevo = r2(r.precio * (1 - PR.desc / 100) / (PR.iva ? 1 + iva / 100 : 1));
+      if (a) { r.var = a.costo > 0 ? (r.nuevo / a.costo - 1) * 100 : null; r.estado = Math.abs(r.nuevo - a.costo) < 0.005 ? 'igual' : (r.nuevo > a.costo ? 'sube' : 'baja'); r.dup = !!seen[a.id]; seen[a.id] = true; } else r.estado = 'nuevo';
+      if (r.sel === undefined || r._k !== PR.fname + PR.desc + PR.iva) { r.sel = r.estado === 'sube' || r.estado === 'baja'; r._k = PR.fname + PR.desc + PR.iva; }
+    });
+    prPrev();
+  } catch (e) { if ($('#l-prev')) $('#l-prev').innerHTML = '<div class="alert a-bad" style="margin-top:12px">' + esc(e.message) + '</div>'; }
+}
+function prCounts() { const c = { sube: 0, baja: 0, igual: 0, nuevo: 0, sel: 0, crear: 0 }; PR.rows.forEach(r => { c[r.estado]++; if (r.sel && r.art) c.sel++; if (!r.art && r.codigo) c.crear++; }); return c; }
+function prPrev() {
+  const c = prCounts(); const f = PR.filtro;
+  const list = PR.rows.map((r, i) => ({ r, i })).filter(x => f === 'todos' || (f === 'cambian' && (x.r.estado === 'sube' || x.r.estado === 'baja')) || f === x.r.estado);
+  const mostrar = list.slice(0, 400);
+  $('#l-prev').innerHTML = '<div class="panel" style="margin-top:12px"><div class="stit" style="font-weight:700">4. Revisá los cambios antes de aplicar</div>' +
+    '<div class="sgrid"><div class="scard r"><div class="slbl">Suben</div><div class="snum">' + c.sube + '</div></div><div class="scard g"><div class="slbl">Bajan</div><div class="snum">' + c.baja + '</div></div><div class="scard"><div class="slbl">Sin cambio</div><div class="snum">' + c.igual + '</div></div><div class="scard y"><div class="slbl">No están en tu catálogo</div><div class="snum">' + c.nuevo + '</div></div></div>' +
+    (PR.rows.some(r => r.dup) ? '<div class="alert a-warn">Algunos artículos aparecen más de una vez en la lista. Se aplica el último precio de cada uno.</div>' : '') +
+    '<div class="brow"><select onchange="PR.filtro=this.value;prPrev()" style="max-width:230px">' + [['cambian', 'Solo los que cambian'], ['sube', 'Solo los que suben'], ['baja', 'Solo los que bajan'], ['igual', 'Sin cambio'], ['nuevo', 'No están en mi catálogo'], ['todos', 'Todos']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><button class="btn l sm" onclick="prSelAll(true)">Marcar todos los que cambian</button><button class="btn l sm" onclick="prSelAll(false)">Desmarcar todos</button><span class="sp"></span><label style="display:flex;gap:6px;align-items:center;font-weight:600"><input type="checkbox" id="l-crear"' + (PR.crear ? ' checked' : '') + ' onchange="PR.crear=this.checked"> Crear también los que no están (' + c.crear + ')</label></div>' +
+    (mostrar.length ? '<div class="twrap" style="max-height:52vh;overflow-y:auto"><table><thead><tr><th></th><th>Código</th><th>Descripción</th><th class="n">Costo actual</th><th class="n">Costo nuevo</th><th class="n">Variación</th></tr></thead><tbody>' + mostrar.map(({ r, i }) => '<tr class="' + (r.var != null && Math.abs(r.var) > 40 ? 'flag' : '') + '"><td>' + (r.art ? '<input type="checkbox" ' + (r.sel ? 'checked' : '') + ' onchange="PR.rows[' + i + '].sel=this.checked;prCnt()">' : '') + '</td><td>' + esc(r.codigo) + '</td><td>' + esc(r.art ? r.art.descripcion : r.descripcion) + (r.art ? '' : ' <span class="badge b-warn">' + (r.codigo ? 'nuevo' : 'sin código') + '</span>') + '</td><td class="n">' + (r.art ? money(r.art.costo) : '—') + '</td><td class="n"><b>' + money(r.nuevo) + '</b></td><td class="n ' + (r.estado === 'sube' ? 'up' : r.estado === 'baja' ? 'dn' : 'eq') + '">' + (r.estado === 'nuevo' ? '' : r.var == null ? '—' : (r.var > 0 ? '+' : '') + fnum(r.var, 1) + '%') + (r.var != null && Math.abs(r.var) > 40 ? ' ⚠' : '') + '</td></tr>').join('') + '</tbody></table></div>' + (list.length > 400 ? '<div class="hint">Mostrando 400 de ' + list.length + '. Los que no ves también se aplican si están marcados.</div>' : '') : '<div class="vacio">No hay filas con ese filtro.</div>') +
+    '<div class="mfoot"><span class="hint" id="l-cnt" style="margin-right:auto;align-self:center"></span><button class="btn o big" id="l-apply" onclick="prApply()">Aplicar los cambios marcados</button></div></div>';
+  prCnt();
+}
+function prCnt() { const c = prCounts(), e = $('#l-cnt'); if (e) e.textContent = c.sel + ' artículo(s) marcado(s) para actualizar'; }
+function prSelAll(v) { PR.rows.forEach(r => { if (r.art && (r.estado === 'sube' || r.estado === 'baja')) r.sel = v; }); prPrev(); }
+async function prApply() {
+  const sel = PR.rows.filter(r => r.sel && r.art); const crear = PR.crear ? PR.rows.filter(r => !r.art && r.codigo) : [];
+  if (!sel.length && !crear.length) return toast('No hay nada marcado para aplicar', 'err');
+  const last = {}; sel.forEach(r => { last[r.art.id] = r; }); const items = Object.values(last);
+  if (!await ask('Vas a actualizar el costo y los precios de ' + items.length + ' artículos' + (crear.length ? ' y crear ' + crear.length + ' artículos nuevos' : '') + '.\nLos 3 precios de venta se ajustan en la misma proporción que el costo. Podés deshacerlo desde el historial.', 'Aplicar')) return;
+  await busy($('#l-apply'), async () => {
+    const r = await rpc('aplicar_lista', { p_proveedor: PR.prov, p_archivo: PR.fname, p_formato: PR.fmt, p_items: items.map(x => ({ articulo_id: x.art.id, codigo: x.codigo, descripcion: x.descripcion || x.art.descripcion, precio_nuevo: x.nuevo })) });
+    let creados = 0;
+    if (crear.length) {
+      const vistos = {}; const nuevos = crear.filter(x => { const k = normCode(x.codigo) || normDesc(x.descripcion); if (vistos[k]) return false; vistos[k] = 1; return true; });
+      const body = nuevos.map((x, n) => ({ negocio_id: S.neg.id, codigo: x.codigo || ('N-' + Date.now().toString(36) + n), descripcion: x.descripcion || x.codigo, proveedor_id: PR.prov, costo: x.nuevo, iva_pct: 21, margen_pct: 30, precio1: Math.round(x.nuevo * 1.3), precio2: Math.round(x.nuevo * 1.2), precio3: Math.round(x.nuevo * 1.15), stock: 0 }));
+      for (let i = 0; i < body.length; i += 500) {
+        const ins = await api('articulos?on_conflict=negocio_id,codigo', { method: 'POST', body: body.slice(i, i + 500), prefer: 'resolution=ignore-duplicates,return=representation' });
+        creados += ins.length;
+        if (ins.length) await api('articulo_proveedor?on_conflict=negocio_id,proveedor_id,codigo_proveedor', { method: 'POST', body: ins.map(a => ({ negocio_id: S.neg.id, articulo_id: a.id, proveedor_id: PR.prov, codigo_proveedor: a.codigo, descripcion_proveedor: a.descripcion, costo_lista: a.costo })), prefer: 'resolution=ignore-duplicates' });
+      }
+    }
+    PR.ultima = r.carga_id; PR.raw = null; PR.pdf = null; PR.rows = []; PR.fname = '';
+    $('#pr-body').innerHTML = '<div class="alert a-ok" style="font-size:16px">✅ <b>Lista aplicada.</b> Se actualizaron <b>' + r.actualizados + '</b> artículos' + (r.sin_cambio ? ', ' + r.sin_cambio + ' ya estaban al día' : '') + (creados ? ' y se crearon <b>' + creados + '</b> nuevos' : '') + '.</div><div class="brow"><button class="btn l" onclick="prUndo(\'' + r.carga_id + '\').then(prListaUI)">↩ Deshacer esta carga</button><button class="btn" onclick="prRender()">Cargar otra lista</button><button class="btn l" onclick="go(\'articulos\')">Ver artículos</button></div>';
+  });
+}
+
+/* ===================== CAJA (turnos) ===================== */
+const CJ = { turno: null };
+const MEDIOS = ['efectivo', 'transferencia', 'débito', 'crédito', 'QR', 'cheque'];
+const hora = i => new Date(i).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+const sumImp = (a, f) => (f ? a.filter(f) : a).reduce((s, m) => s + +m.importe, 0);
+function cajaCalc(t, mov, ventas) {
+  const porMedio = {}; mov.forEach(m => { const k = m.medio_pago || 'otro'; const o = porMedio[k] || (porMedio[k] = { ing: 0, egr: 0 }); if (m.tipo === 'ingreso') o.ing += +m.importe; else o.egr += +m.importe; });
+  const ing = sumImp(mov, m => m.tipo === 'ingreso'), egr = sumImp(mov, m => m.tipo === 'egreso');
+  const ef = porMedio.efectivo || { ing: 0, egr: 0 };
+  const cc = ventas.filter(v => v.condicion === 'cuenta_corriente');
+  return { porMedio, ing: r2(ing), egr: r2(egr), esperado: r2(+t.monto_inicial + ef.ing - ef.egr), ventas_total: r2(sumImp(ventas.map(v => ({ importe: v.total })))), ventas_cant: ventas.length, cc_total: r2(sumImp(cc.map(v => ({ importe: v.total })))), cc_cant: cc.length };
+}
+async function cajaDatos(t) {
+  const desde = q(t.abierta_at), hasta = t.cerrada_at ? '&fecha=lte.' + q(t.cerrada_at) : '';
+  const [mov, ventas] = await Promise.all([
+    api('caja_movimientos?select=*&fecha=gte.' + desde + hasta + '&order=fecha.desc&limit=1000'),
+    api('ventas?select=id,numero,fecha,cliente_id,condicion,medio_pago,total,estado&fecha=gte.' + desde + hasta + '&order=fecha.desc&limit=1000')]);
+  return { mov, ventas, calc: cajaCalc(t, mov, ventas) };
+}
+R.caja = async () => { cajaRender(); };
+async function cajaRender() {
+  const turnos = await api('caja_turnos?select=*&order=abierta_at.desc&limit=30');
+  const t = turnos.find(x => !x.cerrada_at) || null; CJ.turno = t; const hist = turnos.filter(x => x.cerrada_at);
+  let h = '';
+  if (!t) {
+    h += '<div class="panel"><div class="ptit">💵 Caja <span class="pill" style="background:var(--badbg);color:var(--bad)">Cerrada</span></div><div class="alert a-warn">No hay un turno abierto. Abrí la caja con el efectivo con el que arrancás para que se registren las ventas y los cobros del turno.</div>' +
+      '<div class="fgrid" style="max-width:520px"><div class="fg"><label>Monto inicial en efectivo</label><input id="ca-ini" type="number" step="0.01" min="0" value="0"></div><div class="fg"><label>Responsable</label><input value="' + esc(S.user.nombre) + '" disabled></div></div><button class="btn o big" id="ca-abrir" onclick="cajaAbrir()">🔓 Abrir turno</button></div>';
+  } else {
+    const d = await cajaDatos(t), k = d.calc, cli = id => { const c = cliById(id); return c ? c.nombre : 'Consumidor Final'; };
+    const medios = [...new Set([...MEDIOS.filter(m => k.porMedio[m]), ...Object.keys(k.porMedio)])];
+    h += '<div class="panel"><div class="ptit">💵 Caja <span class="pill" style="background:var(--okbg);color:var(--ok)">Abierta</span><span class="sp"></span><button class="btn g" onclick="cajaMov(\'ingreso\')">+ Ingreso</button><button class="btn r" onclick="cajaMov(\'egreso\')">− Egreso</button><button class="btn o" onclick="cajaCerrar()">🔒 Cerrar caja</button></div>' +
+      '<div class="hint" style="margin-bottom:12px">Turno abierto el ' + fdt(t.abierta_at) + ' por ' + esc(t.usuario_nombre || '') + ' · Monto inicial: <b>' + money(t.monto_inicial) + '</b></div>' +
+      '<div class="sgrid"><div class="scard o"><div class="slbl">Efectivo esperado en caja</div><div class="snum">' + money(k.esperado) + '</div><div class="ssub">Inicial + cobros − egresos en efectivo</div></div><div class="scard g"><div class="slbl">Ventas del turno</div><div class="snum">' + money(k.ventas_total) + '</div><div class="ssub">' + k.ventas_cant + ' venta(s)' + (k.cc_cant ? ' · ' + money(k.cc_total) + ' en cuenta corriente' : '') + '</div></div><div class="scard g"><div class="slbl">Ingresos</div><div class="snum">' + money(k.ing) + '</div></div><div class="scard r"><div class="slbl">Egresos</div><div class="snum">' + money(k.egr) + '</div></div></div>' +
+      '<div class="ptit" style="font-size:18px">Por medio de pago</div>' + (medios.length ? '<div class="twrap"><table><thead><tr><th>Medio</th><th class="n">Ingresos</th><th class="n">Egresos</th><th class="n">Neto</th></tr></thead><tbody>' + medios.map(m => { const o = k.porMedio[m]; return '<tr><td>' + esc(m) + '</td><td class="n pos">' + money(o.ing) + '</td><td class="n neg2">' + (o.egr ? '−' + money(o.egr) : '') + '</td><td class="n"><b>' + money(o.ing - o.egr) + '</b></td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="vacio">Todavía no hay cobros en este turno.</div>') + '</div>' +
+      '<div class="g2"><div class="panel"><div class="ptit" style="font-size:18px">🧾 Ventas del turno</div>' + (d.ventas.length ? '<div class="twrap" style="max-height:44vh;overflow-y:auto"><table><thead><tr><th>Hora</th><th>N°</th><th>Cliente</th><th>Forma de pago</th><th class="n">Total</th></tr></thead><tbody>' + d.ventas.map(v => '<tr><td>' + hora(v.fecha) + '</td><td>' + pad(v.numero) + '</td><td>' + esc(cli(v.cliente_id)) + '</td><td>' + (v.condicion === 'cuenta_corriente' ? '<span class="pill" style="background:var(--warnbg);color:var(--warn)">Cuenta corriente</span>' : esc(v.medio_pago || '')) + '</td><td class="n"><b>' + money(v.total) + '</b></td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Sin ventas todavía en este turno.</div>') + '</div>' +
+      '<div class="panel"><div class="ptit" style="font-size:18px">Movimientos de caja</div>' + (d.mov.length ? '<div class="twrap" style="max-height:44vh;overflow-y:auto"><table><thead><tr><th>Hora</th><th>Concepto</th><th>Medio</th><th class="n">Importe</th></tr></thead><tbody>' + d.mov.map(m => '<tr><td>' + hora(m.fecha) + '</td><td>' + esc(m.concepto || '') + '</td><td>' + esc(m.medio_pago || '') + '</td><td class="n ' + (m.tipo === 'ingreso' ? 'pos' : 'neg2') + '">' + (m.tipo === 'ingreso' ? '+' : '−') + money(m.importe) + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Sin movimientos todavía.</div>') + '</div></div>';
+  }
+  h += '<div class="panel"><div class="ptit" style="font-size:18px">🗂️ Turnos anteriores</div>' + (hist.length ? '<div class="twrap"><table><thead><tr><th>Apertura</th><th>Cierre</th><th>Responsable</th><th class="n">Inicial</th><th class="n">Contado</th><th class="n">Diferencia</th><th></th></tr></thead><tbody>' + hist.map(x => '<tr><td>' + fdt(x.abierta_at) + '</td><td>' + fdt(x.cerrada_at) + '</td><td>' + esc(x.usuario_nombre || '') + '</td><td class="n">' + money(x.monto_inicial) + '</td><td class="n">' + money(x.efectivo_contado) + '</td><td class="n ' + (Math.abs(+x.diferencia) < 0.01 ? 'pos' : 'neg2') + '">' + (Math.abs(+x.diferencia) < 0.01 ? 'Sin diferencia' : (x.diferencia > 0 ? '+' : '−') + money(Math.abs(x.diferencia))) + '</td><td><button class="btn l sm" onclick="cajaVerTurno(\'' + x.id + '\')">Ver / imprimir</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Todavía no hay turnos cerrados.</div>') + '</div>';
+  main(h);
+}
+async function cajaAbrir() {
+  const ini = parseFloat(val('ca-ini')); if (isNaN(ini) || ini < 0) return toast('Ingresá un monto inicial válido (puede ser 0)', 'err');
+  await busy($('#ca-abrir'), async () => { await api('caja_turnos', { method: 'POST', body: { negocio_id: S.neg.id, usuario_id: S.user.id, usuario_nombre: S.user.nombre, monto_inicial: ini } }); toast('Turno abierto', 'ok'); cajaRender(); });
+}
+function cajaMov(tipo) {
+  if (!CJ.turno) return toast('Abrí el turno de caja primero', 'err');
+  modal('<h2>' + (tipo === 'ingreso' ? 'Nuevo ingreso' : 'Nuevo egreso') + '</h2><div class="fgrid"><div class="fg wf"><label>Concepto *</label><input id="cm-con" placeholder="' + (tipo === 'ingreso' ? 'Ej.: Aporte de caja chica' : 'Ej.: Pago de flete, retiro de efectivo') + '"></div><div class="fg"><label>Importe *</label><input id="cm-imp" type="number" step="0.01" min="0.01"></div><div class="fg"><label>Medio</label><select id="cm-med"><option>efectivo</option><option>transferencia</option><option>débito</option><option>crédito</option><option>cheque</option></select></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn ' + (tipo === 'ingreso' ? 'g' : 'r') + '" id="cm-ok" onclick="cajaMovOk(\'' + tipo + '\')">Registrar</button></div>');
+}
+async function cajaMovOk(tipo) {
+  const c = val('cm-con').trim(), i = parseFloat(val('cm-imp')); if (!c || !(i > 0)) return toast('Completá concepto e importe', 'err');
+  await busy($('#cm-ok'), async () => { await api('caja_movimientos', { method: 'POST', body: { negocio_id: S.neg.id, tipo, concepto: c, importe: i, medio_pago: val('cm-med'), usuario_id: S.user.id } }); closeModal(); toast('Movimiento registrado', 'ok'); cajaRender(); });
+}
+async function cajaCerrar() {
+  const t = CJ.turno; if (!t) return;
+  const d = await cajaDatos(t), k = d.calc;
+  modal('<h2>🔒 Cerrar caja</h2><div class="alert a-info">Contá el efectivo que hay en el cajón e ingresalo. Se compara con lo que el sistema espera.</div><div class="sgrid"><div class="scard"><div class="slbl">Monto inicial</div><div class="snum" style="font-size:24px">' + money(t.monto_inicial) + '</div></div><div class="scard o"><div class="slbl">Efectivo esperado</div><div class="snum" style="font-size:24px">' + money(k.esperado) + '</div></div><div class="scard"><div class="slbl">Ventas del turno</div><div class="snum" style="font-size:24px">' + money(k.ventas_total) + '</div></div></div>' +
+    '<div class="fgrid"><div class="fg"><label>Efectivo contado *</label><input id="cc-cont" type="number" step="0.01" min="0" oninput="cajaDif(' + k.esperado + ')"></div><div class="fg"><label>Diferencia</label><input id="cc-dif" disabled value="—"></div><div class="fg wf"><label>Observaciones</label><textarea id="cc-not" rows="2" placeholder="Opcional: explicá cualquier diferencia"></textarea></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="cc-ok">Cerrar caja</button></div>');
+  $('#cc-ok').onclick = () => busy($('#cc-ok'), async () => {
+    const cont = parseFloat(val('cc-cont')); if (isNaN(cont) || cont < 0) return toast('Ingresá el efectivo contado', 'err');
+    const dif = r2(cont - k.esperado), ahora = new Date().toISOString();
+    const dd = await cajaDatos(t), k2 = dd.calc; // recalcula por si hubo movimientos mientras tanto
+    const dif2 = r2(cont - k2.esperado);
+    await api('caja_turnos?id=eq.' + t.id, { method: 'PATCH', body: { cerrada_at: ahora, cerrada_por: S.user.nombre, efectivo_esperado: k2.esperado, efectivo_contado: cont, diferencia: dif2, notas: val('cc-not').trim() || null, resumen: { porMedio: k2.porMedio, ing: k2.ing, egr: k2.egr, ventas_total: k2.ventas_total, ventas_cant: k2.ventas_cant, cc_total: k2.cc_total, cc_cant: k2.cc_cant } } });
+    closeModal(); toast('Caja cerrada' + (Math.abs(dif2) < 0.01 ? ' sin diferencias' : ' con diferencia de ' + money(dif2)), Math.abs(dif2) < 0.01 ? 'ok' : 'err');
+    await cajaRender(); cajaVerTurno(t.id);
+  });
+}
+function cajaDif(esp) { const v = parseFloat(val('cc-cont')); const e = $('#cc-dif'); if (!e) return; if (isNaN(v)) { e.value = '—'; return; } const d = r2(v - esp); e.value = Math.abs(d) < 0.01 ? 'Sin diferencia' : (d > 0 ? 'Sobran ' : 'Faltan ') + money(Math.abs(d)); e.style.color = Math.abs(d) < 0.01 ? 'var(--ok)' : 'var(--bad)'; }
+async function cajaVerTurno(id) {
+  const t = (await api('caja_turnos?id=eq.' + id + '&select=*'))[0]; if (!t) return;
+  const d = await cajaDatos(t), k = d.calc;
+  window._arq = { t, d };
+  modal('<h2>Turno del ' + fdt(t.abierta_at) + '</h2><div class="hint" style="margin-bottom:10px">' + (t.cerrada_at ? 'Cerrado el ' + fdt(t.cerrada_at) + ' por ' + esc(t.cerrada_por || '') : 'Turno abierto') + ' · Responsable: ' + esc(t.usuario_nombre || '') + '</div><div class="sgrid"><div class="scard"><div class="slbl">Monto inicial</div><div class="snum" style="font-size:24px">' + money(t.monto_inicial) + '</div></div><div class="scard o"><div class="slbl">Efectivo esperado</div><div class="snum" style="font-size:24px">' + money(t.efectivo_esperado != null ? t.efectivo_esperado : k.esperado) + '</div></div>' + (t.cerrada_at ? '<div class="scard"><div class="slbl">Efectivo contado</div><div class="snum" style="font-size:24px">' + money(t.efectivo_contado) + '</div></div><div class="scard ' + (Math.abs(+t.diferencia) < 0.01 ? 'g' : 'r') + '"><div class="slbl">Diferencia</div><div class="snum" style="font-size:24px">' + money(t.diferencia) + '</div></div>' : '') + '<div class="scard g"><div class="slbl">Ventas</div><div class="snum" style="font-size:24px">' + money(k.ventas_total) + '</div><div class="ssub">' + k.ventas_cant + ' venta(s)</div></div></div>' + (t.notas ? '<div class="alert a-info">' + esc(t.notas) + '</div>' : '') +
+    '<div class="twrap"><table><thead><tr><th>Medio</th><th class="n">Ingresos</th><th class="n">Egresos</th></tr></thead><tbody>' + Object.keys(k.porMedio).map(m => '<tr><td>' + esc(m) + '</td><td class="n">' + money(k.porMedio[m].ing) + '</td><td class="n">' + money(k.porMedio[m].egr) + '</td></tr>').join('') + '</tbody></table></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cerrar</button><button class="btn" onclick="cajaImprimir()">🖨️ Imprimir arqueo</button></div>', true);
+}
+function cajaImprimir() {
+  const { t, d } = window._arq || {}; if (!t) return; const k = d.calc, w = openPrintWin();
+  const cli = id => { const c = cliById(id); return c ? c.nombre : 'Consumidor Final'; };
+  writePrint(w, 'Arqueo de caja', '<div class="hd">' + negHeader() + '<div style="text-align:right"><div class="big">ARQUEO DE CAJA</div><div>Apertura: ' + fdt(t.abierta_at) + '</div><div>Cierre: ' + (t.cerrada_at ? fdt(t.cerrada_at) : 'turno abierto') + '</div><div>Responsable: ' + esc(t.usuario_nombre || '') + '</div></div></div>' +
+    '<table><thead><tr><th>Medio de pago</th><th class="n">Ingresos</th><th class="n">Egresos</th><th class="n">Neto</th></tr></thead><tbody>' + Object.keys(k.porMedio).map(m => '<tr><td>' + esc(m) + '</td><td class="n">' + money(k.porMedio[m].ing) + '</td><td class="n">' + money(k.porMedio[m].egr) + '</td><td class="n">' + money(k.porMedio[m].ing - k.porMedio[m].egr) + '</td></tr>').join('') + '</tbody></table>' +
+    '<div class="tot"><div><span>Monto inicial</span><span>' + money(t.monto_inicial) + '</span></div><div><span>Efectivo esperado</span><span>' + money(t.efectivo_esperado != null ? t.efectivo_esperado : k.esperado) + '</span></div>' + (t.cerrada_at ? '<div><span>Efectivo contado</span><span>' + money(t.efectivo_contado) + '</span></div><div class="t"><span>DIFERENCIA</span><span>' + money(t.diferencia) + '</span></div>' : '') + '</div>' +
+    '<h2 style="margin-top:16px">Ventas del turno (' + k.ventas_cant + ' · ' + money(k.ventas_total) + ')</h2><table><thead><tr><th>Hora</th><th>N°</th><th>Cliente</th><th>Forma de pago</th><th class="n">Total</th></tr></thead><tbody>' + d.ventas.slice().reverse().map(v => '<tr><td>' + hora(v.fecha) + '</td><td>' + pad(v.numero) + '</td><td>' + esc(cli(v.cliente_id)) + '</td><td>' + (v.condicion === 'cuenta_corriente' ? 'Cuenta corriente' : esc(v.medio_pago || '')) + '</td><td class="n">' + money(v.total) + '</td></tr>').join('') + '</tbody></table>' +
+    (t.notas ? '<div class="leg"><b>Observaciones:</b> ' + esc(t.notas) + '</div>' : '') + '<div style="margin-top:46px;display:flex;justify-content:space-between"><div style="border-top:1px solid #111;width:220px;text-align:center;padding-top:3px">Firma del responsable</div><div style="border-top:1px solid #111;width:220px;text-align:center;padding-top:3px">Firma del supervisor</div></div>');
+}
+
+/* ===================== CONFIGURACIÓN ===================== */
+R.config = async () => {
+  const n = (await api('negocios?select=*'))[0]; S.neg = n; saveSes(); const cf = n.config || {};
+  const users = await api('usuarios?select=id,nombre,username,rol,activo&order=nombre.asc');
+  const log = await api('bitacora?select=accion,detalle,created_at&order=created_at.desc&limit=15');
+  main('<div class="panel"><div class="ptit">⚙️ Datos del negocio</div><div class="fgrid"><div class="fg w2"><label>Nombre</label><input id="cf-nom" value="' + esc(n.nombre) + '"></div><div class="fg"><label>CUIT</label><input id="cf-cuit" value="' + esc(n.cuit || '') + '"></div><div class="fg"><label>Condición IVA</label><select id="cf-iva">' + ['Responsable Inscripto', 'Monotributo', 'Exento'].map(v => '<option' + (v === n.condicion_iva ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div><div class="fg w2"><label>Eslogan</label><input id="cf-slo" value="' + esc(n.slogan || '') + '"></div><div class="fg w2"><label>Dirección</label><input id="cf-dir" value="' + esc(n.direccion || '') + '"></div><div class="fg"><label>Teléfono</label><input id="cf-tel" value="' + esc(n.telefono || '') + '"></div><div class="fg"><label>Email</label><input id="cf-mail" value="' + esc(n.email || '') + '"></div></div>' +
+    '<div class="stit" style="font-weight:700;margin:8px 0">Presupuestos y listas de precios</div><div class="fgrid"><div class="fg"><label>Nombre lista 1</label><input id="cf-l1" value="' + esc(lista(1)) + '"></div><div class="fg"><label>Nombre lista 2</label><input id="cf-l2" value="' + esc(lista(2)) + '"></div><div class="fg"><label>Nombre lista 3</label><input id="cf-l3" value="' + esc(lista(3)) + '"></div><div class="fg"><label>Validez por defecto (días)</label><input id="cf-val" type="number" min="1" value="' + (cf.validez_presupuesto_dias || 15) + '"></div><div class="fg wf"><label>Condiciones por defecto del presupuesto</label><textarea id="cf-cond">' + esc(cf.condiciones_presupuesto || 'Precios sujetos a variación sin previo aviso. Sujeto a disponibilidad de stock al momento de la compra.') + '</textarea></div></div><div class="mfoot"><button class="btn o" id="cf-ok" onclick="cfSave()">Guardar cambios</button></div></div>' +
+    '<div class="panel"><div class="ptit">👥 Usuarios<span class="sp"></span>' + (esAdmin() ? '<button class="btn o sm" onclick="usrNuevo()">+ Nuevo usuario</button>' : '') + '<button class="btn l sm" onclick="usrMiClave()">Cambiar mi contraseña</button></div><div class="twrap"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>' + users.map(u => '<tr><td>' + esc(u.nombre) + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.rol) + '</td><td>' + (u.activo ? '<span class="pill" style="background:var(--okbg);color:var(--ok)">Activo</span>' : '<span class="pill" style="background:var(--badbg);color:var(--bad)">Inactivo</span>') + '</td><td style="white-space:nowrap">' + (esAdmin() ? '<button class="btn l sm" onclick="usrEditar(\'' + u.id + '\')">Editar</button> <button class="btn l sm" onclick="usrClave(\'' + u.id + '\')">Contraseña</button>' : '') + '</td></tr>').join('') + '</tbody></table></div><div class="hint" style="margin-top:6px">Roles: administrador (todo), vendedor y cajero. Las contraseñas tienen mínimo 8 caracteres.</div></div>' +
+    '<div class="panel"><div class="ptit">Actividad reciente</div>' + (log.length ? '<div class="twrap"><table><tbody>' + log.map(l => '<tr><td>' + fdt(l.created_at) + '</td><td>' + esc(l.accion) + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="vacio">Sin actividad todavía.</div>') + '</div>');
+};
+async function cfSave() {
+  const old = S.neg.config || {};
+  const cfg = { ...old, listas_precio: [val('cf-l1').trim() || 'Mostrador', val('cf-l2').trim() || 'Mayorista', val('cf-l3').trim() || 'Constructora'], validez_presupuesto_dias: parseInt(val('cf-val'), 10) || 15, condiciones_presupuesto: val('cf-cond') };
+  await busy($('#cf-ok'), async () => {
+    await api('negocios?id=eq.' + S.neg.id, { method: 'PATCH', body: { nombre: val('cf-nom').trim() || S.neg.nombre, cuit: val('cf-cuit').trim() || null, condicion_iva: val('cf-iva'), slogan: val('cf-slo').trim() || null, direccion: val('cf-dir').trim() || null, telefono: val('cf-tel').trim() || null, email: val('cf-mail').trim() || null, config: cfg } });
+    S.neg = (await api('negocios?select=*'))[0]; saveSes(); $('#hneg').textContent = S.neg.nombre; toast('Datos guardados', 'ok');
+  });
+}
+
+/* ===================== USUARIOS ===================== */
+function esAdmin() { return S.user && S.user.rol === 'admin'; }
+let USRS = [];
+async function usrFn(body) {
+  const r = await fetch(SB_URL + '/functions/v1/usuarios-ferreteria', { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + S.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'No se pudo completar la operación');
+  return j;
+}
+const ROLOPT = sel => ['admin', 'vendedor', 'cajero'].map(r => '<option value="' + r + '"' + (r === sel ? ' selected' : '') + '>' + ({ admin: 'Administrador', vendedor: 'Vendedor', cajero: 'Cajero' })[r] + '</option>').join('');
+function usrNuevo() {
+  modal('<h2>Nuevo usuario</h2><div class="fgrid"><div class="fg"><label>Nombre</label><input id="un-nom" autocomplete="off"></div><div class="fg"><label>Usuario (para entrar)</label><input id="un-usr" autocomplete="off" autocapitalize="off"></div><div class="fg"><label>Contraseña (mín. 8)</label><input id="un-pw" type="password" autocomplete="new-password"></div><div class="fg"><label>Rol</label><select id="un-rol">' + ROLOPT('vendedor') + '</select></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="un-ok">Crear usuario</button></div>');
+  $('#un-ok').onclick = () => busy($('#un-ok'), async () => {
+    await usrFn({ accion: 'crear', nombre: val('un-nom'), username: val('un-usr'), password: val('un-pw'), rol: val('un-rol') });
+    closeModal(); toast('Usuario creado', 'ok'); go('config');
+  }).catch(e => toast(e.message, 'err'));
+}
+async function usrEditar(id) {
+  const u = (await api('usuarios?select=id,nombre,username,rol,activo&id=eq.' + id))[0]; if (!u) return;
+  modal('<h2>Editar ' + esc(u.username) + '</h2><div class="fgrid"><div class="fg"><label>Nombre</label><input id="ue-nom" value="' + esc(u.nombre) + '"></div><div class="fg"><label>Rol</label><select id="ue-rol">' + ROLOPT(u.rol) + '</select></div><div class="fg"><label>Estado</label><select id="ue-act"><option value="1"' + (u.activo ? ' selected' : '') + '>Activo</option><option value="0"' + (u.activo ? '' : ' selected') + '>Inactivo (no puede entrar)</option></select></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="ue-ok">Guardar</button></div>');
+  $('#ue-ok').onclick = () => busy($('#ue-ok'), async () => {
+    await usrFn({ accion: 'editar', id, nombre: val('ue-nom'), rol: val('ue-rol'), activo: val('ue-act') === '1' });
+    closeModal(); toast('Usuario actualizado', 'ok'); go('config');
+  }).catch(e => toast(e.message, 'err'));
+}
+async function usrClave(id) {
+  const u = (await api('usuarios?select=id,username&id=eq.' + id))[0]; if (!u) return;
+  modal('<h2>Nueva contraseña para ' + esc(u.username) + '</h2><div class="fgrid"><div class="fg wf"><label>Contraseña nueva (mín. 8)</label><input id="uc-pw" type="password" autocomplete="new-password"></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="uc-ok">Cambiar contraseña</button></div>');
+  $('#uc-ok').onclick = () => busy($('#uc-ok'), async () => {
+    await usrFn({ accion: 'clave', id, password: val('uc-pw') });
+    closeModal(); toast('Contraseña cambiada', 'ok');
+  }).catch(e => toast(e.message, 'err'));
+}
+function usrMiClave() {
+  modal('<h2>Cambiar mi contraseña</h2><div class="fgrid"><div class="fg wf"><label>Contraseña actual</label><input id="um-a" type="password" autocomplete="current-password"></div><div class="fg wf"><label>Contraseña nueva (mín. 8)</label><input id="um-n" type="password" autocomplete="new-password"></div></div><div class="mfoot"><button class="btn l" onclick="closeModal()">Cancelar</button><button class="btn o" id="um-ok">Cambiar</button></div>');
+  $('#um-ok').onclick = () => busy($('#um-ok'), async () => {
+    await usrFn({ accion: 'mi_clave', actual: val('um-a'), nueva: val('um-n') });
+    closeModal(); toast('Contraseña actualizada', 'ok');
+  }).catch(e => toast(e.message, 'err'));
+}
+</script>
+</body>
+</html>
