@@ -948,22 +948,143 @@ function parseCSV(text) {
   if (cur !== '' || row.length) { row.push(cur); out.push(row); }
   return out;
 }
+/* ---- PDF: se reconstruye una TABLA a partir de la posición del texto (mismo método que Mi Gestor) ---- */
+function pdfRenglones(paginas, tolF) {
+  const out = [];
+  (paginas || []).forEach(items => {
+    const it = (items || []).filter(t => t && String(t.str).trim() !== '').map(t => ({ str: String(t.str), x: +t.x, y: +t.y, w: +t.w || 0, h: +t.h || 8 }));
+    if (!it.length) return;
+    const hs = it.map(t => t.h).sort((a, b) => a - b); const hMed = hs[Math.floor(hs.length / 2)] || 8; const tol = Math.max(1.5, hMed * tolF);
+    it.sort((a, b) => b.y - a.y || a.x - b.x);
+    const rg = [];
+    it.forEach(t => { const u = rg[rg.length - 1]; if (u && Math.abs(u.y - t.y) <= tol) u.items.push(t); else rg.push({ y: t.y, items: [t] }); });
+    rg.forEach(r => { r.items.sort((a, b) => a.x - b.x); out.push(r.items); });
+  });
+  return out;
+}
+function pdfCeldas(items, gapF) {
+  const celdas = [];
+  items.forEach(t => {
+    const c = celdas[celdas.length - 1]; const hueco = c ? t.x - c.x1 : Infinity;
+    if (c && hueco < Math.max(t.h, 6) * gapF) { c.txt += (hueco > 0.5 ? ' ' : '') + t.str.trim(); c.x1 = Math.max(c.x1, t.x + t.w); }
+    else celdas.push({ x0: t.x, x1: t.x + t.w, txt: t.str.trim() });
+  });
+  return celdas;
+}
+function pdfAMatriz(paginas, gapF) {
+  const filas = pdfRenglones(paginas, 0.45).map(r => pdfCeldas(r, gapF));
+  if (!filas.length) return [];
+  const multi = filas.filter(f => f.length >= 2);
+  let maxX = 0; filas.forEach(f => f.forEach(c => { if (c.x1 > maxX) maxX = c.x1; }));
+  const N = Math.ceil(maxX) + 2; const cob = new Array(N).fill(0);
+  multi.forEach(f => f.forEach(c => { for (let x = Math.max(0, Math.floor(c.x0)); x <= Math.min(N - 1, Math.ceil(c.x1)); x++) cob[x]++; }));
+  const umbral = Math.max(2, Math.round(multi.length * 0.04));
+  let cols = []; let ini = -1;
+  for (let x = 0; x <= N; x++) { const on = x < N && cob[x] >= umbral; if (on && ini < 0) ini = x; if (!on && ini >= 0) { cols.push({ a: ini, b: x - 1 }); ini = -1; } }
+  const uni = []; cols.forEach(c => { const u = uni[uni.length - 1]; if (u && c.a - u.b < 4) u.b = c.b; else uni.push({ a: c.a, b: c.b }); }); cols = uni;
+  if (!cols.length) return filas.map(f => f.map(c => c.txt));
+  const matriz = filas.map(f => {
+    const fila = new Array(cols.length).fill('');
+    f.forEach(c => {
+      const centro = (c.x0 + c.x1) / 2; let k = -1;
+      for (let i = 0; i < cols.length; i++) if (centro >= cols[i].a && centro <= cols[i].b) { k = i; break; }
+      if (k < 0) { let mej = Infinity; cols.forEach((col, i) => { const d = Math.min(Math.abs(centro - col.a), Math.abs(centro - col.b)); if (d < mej) { mej = d; k = i; } }); }
+      fila[k] = fila[k] ? fila[k] + ' ' + c.txt : c.txt;
+    });
+    return fila;
+  });
+  const usadas = cols.map((_, i) => matriz.some(f => f[i] !== ''));
+  return matriz.map(f => f.filter((_, i) => usadas[i]));
+}
+function pdfPorRenglon(paginas) {
+  const filas = []; let maxImp = 1; let hayCod = 0;
+  pdfRenglones(paginas, 0.45).forEach(items => {
+    const tok = pdfCeldas(items, 0.6).map(c => c.txt).join(' ').split(/\s+/).filter(Boolean);
+    const imp = []; let fin = tok.length;
+    while (fin > 0) {
+      const t = tok[fin - 1];
+      if (t === '$' || t === 'ARS') { fin--; continue; }
+      if (/%$/.test(t)) { if (/^\d[\d.,]*%$/.test(t)) { fin--; continue; } break; }
+      if (/^\$?-?\d[\d.,]*$/.test(t)) { imp.unshift(t.replace(/^\$/, '')); fin--; continue; }
+      break;
+    }
+    if (!imp.length) return;
+    if (/\b(p[aá]gina|pag\.|hoja|vigencia|vigente|fecha|tel|cuit|total|subtotal|actualizad[ao]|ventas|whatsapp)\b/i.test(tok.slice(0, fin).join(' '))) return;
+    const cab = tok.slice(0, fin); if (!cab.length) return;
+    let codigo = '', desc = cab;
+    if (cab.length >= 2 && /\d/.test(cab[0]) && cab[0].length <= 18 && !/^\d{1,3}$/.test(cab[0])) { codigo = cab[0]; desc = cab.slice(1); }
+    if (codigo) hayCod++;
+    maxImp = Math.max(maxImp, Math.min(imp.length, 3));
+    filas.push({ codigo, desc: desc.join(' '), imp: imp.slice(-3) });
+  });
+  if (!filas.length) return [];
+  const conCod = hayCod >= filas.length * 0.5; const out = [];
+  filas.forEach(f => { const r = []; if (conCod) r.push(f.codigo); r.push(f.desc); const faltan = maxImp - f.imp.length; for (let i = 0; i < faltan; i++) r.push(''); f.imp.forEach(v => r.push(v)); out.push(r); });
+  return out;
+}
+function pdfLecturas(paginas) {
+  const cand = [
+    { nombre: 'Por columnas (recomendada)', matriz: pdfAMatriz(paginas, 0.6) },
+    { nombre: 'Por columnas, más separadas', matriz: pdfAMatriz(paginas, 1.4) },
+    { nombre: 'Por renglón (precio al final de cada línea)', matriz: pdfPorRenglon(paginas) }
+  ].filter(l => l.matriz && l.matriz.length > 1);
+  const vistos = new Set();
+  return cand.filter(l => { const k = JSON.stringify(l.matriz.slice(0, 30)); if (vistos.has(k)) return false; vistos.add(k); return true; })
+    .map(l => ({ nombre: l.nombre, matriz: l.matriz.map(f => f.map(c => c == null ? '' : c)) }));
+}
+const prCel = x => x == null ? '' : String(x).trim();
+const prNumLike = x => /^(\$|ARS)?\s*-?\d[\d.,]*\s*(\$|ARS)?$/i.test(prCel(x)) && !isNaN(parseNum(x));
+/** Adivina qué columna es código, descripción y precio mirando el contenido (para listas sin títulos). */
+function prGuess(raw, hdr) {
+  const filas = raw.slice(Math.max(hdr + 1, 0), Math.max(hdr + 1, 0) + 300).filter(r => r && r.some(c => prCel(c) !== ''));
+  const nc = Math.min(60, filas.reduce((m, r) => Math.max(m, r.length), 0));
+  if (!filas.length || !nc) return { cc: -1, dc: -1, pc: -1 };
+  const info = [];
+  for (let j = 0; j < nc; j++) {
+    const v = filas.map(r => prCel(r[j])).filter(Boolean); const n = v.length;
+    const num = v.filter(x => prNumLike(x)).length; const largo = n ? v.reduce((a, x) => a + x.length, 0) / n : 0;
+    const uni = new Set(v).size; const conDig = v.filter(x => /\d/.test(x)).length;
+    const nums = v.filter(x => prNumLike(x)).map(x => parseNum(x)).sort((a, b) => a - b); const med = nums.length ? nums[Math.floor(nums.length / 2)] : 0;
+    const conDec = v.filter(x => /[.,]\d{1,2}\s*$/.test(x)).length;
+    info.push({ j, n, ratioNum: n ? num / n : 0, largo, uniq: n ? uni / n : 0, dig: n ? conDig / n : 0, llena: n / filas.length, esPrecio: n && (conDec / n >= 0.3 || med >= 100) });
+  }
+  const minLl = 0.3;
+  const dcand = info.filter(c => c.llena >= minLl && c.ratioNum < 0.5).sort((a, b) => b.largo - a.largo)[0];
+  const dc = dcand ? dcand.j : -1;
+  const ccand = info.filter(c => c.j !== dc && c.llena >= 0.5 && c.largo <= 22 && c.dig >= 0.6 && c.uniq >= 0.8 && (dc < 0 || c.j < dc))[0];
+  const cc = ccand ? ccand.j : -1;
+  const pcands = info.filter(c => c.j !== cc && c.j !== dc && c.llena >= 0.6 && c.ratioNum >= 0.7 && c.esPrecio);
+  let pc = -1;
+  if (pcands.length) { const der = pcands.filter(c => dc < 0 || c.j > dc); pc = (der[0] || pcands[pcands.length - 1]).j; }
+  return { cc, dc, pc };
+}
+const prMemKey = () => 'ferre_pr_' + (PR.prov || '');
+function prMemGet() { try { return JSON.parse(localStorage.getItem(prMemKey()) || 'null'); } catch (e) { return null; } }
+function prMemSet() { try { if (PR.prov) localStorage.setItem(prMemKey(), JSON.stringify({ lect: PR.lects ? PR.lects[PR.lect].nombre : null, hdr: PR.hdr, cc: PR.cc, dc: PR.dc, pc: PR.pc, n: prNCols() })); } catch (e) { } }
+const prNCols = () => Math.min(60, (PR.raw || []).slice(0, 60).reduce((m, r) => Math.max(m, (r || []).length), 0));
 async function prFile(f) {
   const ext = (f.name.split('.').pop() || '').toLowerCase();
-  PR.fname = f.name; PR.raw = null; PR.pdf = null; PR.sheets = null; PR.rows = [];
+  PR.fname = f.name; PR.raw = null; PR.pdf = null; PR.lects = null; PR.sheets = null; PR.rows = [];
   const dz = $('#l-dz'); dz.innerHTML = '<div style="font-size:30px">⏳</div><b>Leyendo ' + esc(f.name) + '…</b>';
   try {
     if (ext === 'pdf') {
       PR.fmt = 'pdf'; await libPDF();
-      const doc = await window.pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; const lines = [];
+      const doc = await window.pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+      if (doc.numPages > 300) throw new Error('El PDF tiene demasiadas páginas (' + doc.numPages + '). Dividilo en partes.');
+      const paginas = []; let textos = 0;
       for (let n = 1; n <= doc.numPages; n++) {
-        const tc = await (await doc.getPage(n)).getTextContent(); const its = tc.items.filter(i => i.str && i.str.trim()).map(i => ({ s: i.str, x: i.transform[4], y: i.transform[5] }));
-        its.sort((a, b) => b.y - a.y || a.x - b.x); let cur = null;
-        its.forEach(i => { if (cur && Math.abs(cur.y - i.y) <= 2.5) cur.p.push(i); else { cur = { y: i.y, p: [i] }; lines.push(cur); } });
+        const tc = await (await doc.getPage(n)).getTextContent();
+        const its = tc.items.filter(i => typeof i.str === 'string').map(i => ({ str: i.str, x: i.transform[4], y: i.transform[5], w: i.width || 0, h: Math.abs(i.height || i.transform[3] || 8) }));
+        textos += its.filter(i => i.str.trim()).length; paginas.push(its);
       }
-      PR.pdf = lines.map(l => l.p.sort((a, b) => a.x - b.x).map(i => i.s.trim()).join(' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
-      if (!PR.pdf.length) throw new Error('El PDF no tiene texto seleccionable (parece una imagen escaneada). Pedile al proveedor el Excel o un PDF exportado desde su sistema.');
-      prRows();
+      if (textos < 5) throw new Error('El PDF no tiene texto seleccionable (parece una imagen escaneada). Pedile al proveedor el Excel o un PDF exportado desde su sistema.');
+      PR.lects = pdfLecturas(paginas);
+      if (!PR.lects.length) throw new Error('No se pudo armar una tabla con ese PDF. Probá con la lista en Excel o CSV.');
+      // se elige la lectura que más productos con precio saca (o la que usaste la última vez con este proveedor)
+      const mem = prMemGet(); let mejor = 0, mejorN = -1;
+      PR.lects.forEach((l, i) => { PR.raw = l.matriz; prAuto(true); const n = PR.rows.length; if (n > mejorN) { mejorN = n; mejor = i; } });
+      const iMem = mem && mem.lect ? PR.lects.findIndex(l => l.nombre === mem.lect) : -1;
+      PR.lect = iMem >= 0 ? iMem : mejor; PR.raw = PR.lects[PR.lect].matriz; prAuto(); prMemAplicar(mem);
     } else if (ext === 'csv' || ext === 'txt') {
       PR.fmt = 'csv'; const buf = await f.arrayBuffer(); let t = new TextDecoder('utf-8').decode(buf); if (t.indexOf('�') >= 0) t = new TextDecoder('windows-1252').decode(buf);
       PR.raw = parseCSV(t); prAuto();
@@ -974,49 +1095,56 @@ async function prFile(f) {
     prListaUI();
   } catch (e) { toast(e.message, 'err'); PR.fname = ''; prListaUI(); }
 }
-function prSheet() { const ws = PR.sheets.Sheets[PR.sheet]; PR.raw = window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }); prAuto(); }
-function prAuto() {
+function prSheet() { const ws = PR.sheets.Sheets[PR.sheet]; PR.raw = window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }); prAuto(); prMemAplicar(prMemGet()); }
+function prMemAplicar(mem) {
+  if (!mem || mem.n !== prNCols()) return;
+  if (mem.hdr != null) PR.hdr = mem.hdr; PR.cc = mem.cc; PR.dc = mem.dc; PR.pc = mem.pc; prRows();
+}
+function prAuto(silencioso) {
   const raw = PR.raw; let h = 0, best = -1;
-  for (let i = 0; i < Math.min(40, raw.length); i++) { const r = raw[i].map(c => String(c).toLowerCase()); const sc = (r.some(c => /c[oó]d|sku|ref/.test(c)) ? 2 : 0) + (r.some(c => /precio|costo|importe|lista/.test(c)) ? 2 : 0) + (r.some(c => /descr|detalle|producto|art[ií]culo|nombre/.test(c)) ? 1 : 0); if (sc > best) { best = sc; h = i; } if (sc >= 5) break; }
-  PR.hdr = best > 0 ? h : 0; prCols();
+  for (let i = 0; i < Math.min(40, raw.length); i++) { const r = raw[i].map(c => String(c == null ? '' : c).toLowerCase()); const llenas = r.filter(c => c.trim() !== '').length; const sc = llenas < 2 ? 0 : (r.some(c => /c[oó]d|sku|ref/.test(c)) ? 2 : 0) + (r.some(c => /precio|costo|importe|lista/.test(c)) ? 2 : 0) + (r.some(c => /descr|detalle|producto|art[ií]culo|nombre/.test(c)) ? 1 : 0); if (sc > best) { best = sc; h = i; } if (sc >= 5) break; }
+  PR.hdr = best >= 3 ? h : (PR.fmt === 'pdf' ? -1 : 0); prCols();
 }
 function prCols() {
-  const hd = (PR.raw[PR.hdr] || []).map(c => String(c).toLowerCase().trim());
+  const hd = PR.hdr >= 0 ? (PR.raw[PR.hdr] || []).map(c => prCel(c).toLowerCase()) : [];
   const find = (re, not) => hd.findIndex((c, i) => c && re.test(c) && !(not && not.test(c)));
   PR.cc = find(/c[oó]d|sku|ref/); PR.dc = find(/descr|detalle|producto|nombre|art[ií]culo/, /c[oó]d/);
   PR.pc = find(/precio|costo|importe|lista|p\.? ?unit/, /iva|final|c\/ ?iva|con iva/); if (PR.pc < 0) PR.pc = find(/precio|costo|importe|lista|p\.? ?unit/);
+  if (PR.cc < 0 || PR.dc < 0 || PR.pc < 0) { const g = prGuess(PR.raw, PR.hdr); if (PR.cc < 0) PR.cc = g.cc; if (PR.dc < 0) PR.dc = g.dc; if (PR.pc < 0) PR.pc = g.pc; }
   prRows();
 }
 function prRows() {
   const out = [];
-  if (PR.pdf) {
-    const numRe = /^\$?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?$|^\$?\d+(?:[.,]\d{1,2})?$/;
-    PR.pdf.forEach(line => {
-      const tk = line.split(' '); const cand = []; tk.forEach((t, i) => { if (i === 0 && PR.pdfCode) return; if (numRe.test(t) && !isNaN(parseNum(t))) cand.push(i); });
-      if (!cand.length) return;
-      const pi = PR.pdfPos === 'first' ? cand[0] : PR.pdfPos === 'prev' ? cand[Math.max(0, cand.length - 2)] : cand[cand.length - 1];
-      const precio = parseNum(tk[pi]); if (!(precio > 0)) return;
-      let codigo = '', ini = 0; if (PR.pdfCode && /\d/.test(tk[0]) && tk[0].length <= 22 && pi > 0) { codigo = tk[0]; ini = 1; }
-      out.push({ codigo, descripcion: tk.slice(ini, pi).join(' '), precio });
-    });
-  } else if (PR.raw) {
+  if (PR.raw) {
     for (let i = PR.hdr + 1; i < PR.raw.length; i++) {
-      const r = PR.raw[i]; const precio = parseNum(PR.pc >= 0 ? r[PR.pc] : NaN); const codigo = PR.cc >= 0 ? String(r[PR.cc]).trim() : ''; const descripcion = PR.dc >= 0 ? String(r[PR.dc]).trim() : '';
+      const r = PR.raw[i] || []; const precio = PR.pc >= 0 && prNumLike(r[PR.pc]) ? parseNum(r[PR.pc]) : NaN; const codigo = PR.cc >= 0 ? prCel(r[PR.cc]) : ''; const descripcion = PR.dc >= 0 ? prCel(r[PR.dc]) : '';
       if (precio > 0 && (codigo || descripcion)) out.push({ codigo, descripcion, precio });
     }
   }
   PR.rows = out;
 }
+function prCambio(campo, v) { PR[campo] = +v; prRows(); prMemSet(); prMapUI(); prMatch(); }
+function prLect(i) { PR.lect = +i; PR.raw = PR.lects[PR.lect].matriz; prAuto(); prMemSet(); prMapUI(); prMatch(); }
 function prMapUI() {
-  const el = $('#l-map'); if (!el) return;
-  if (PR.pdf) {
-    el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Cómo leer el PDF</div><div class="fgrid"><div class="fg"><label>El precio es…</label><select onchange="PR.pdfPos=this.value;prRows();prMatch()"><option value="last"' + (PR.pdfPos === 'last' ? ' selected' : '') + '>El último número de la línea</option><option value="prev"' + (PR.pdfPos === 'prev' ? ' selected' : '') + '>El anteúltimo número</option><option value="first"' + (PR.pdfPos === 'first' ? ' selected' : '') + '>El primer número (después del código)</option></select></div><div class="fg" style="justify-content:end"><label style="display:flex;gap:6px;align-items:center;text-transform:none;font-size:14px"><input type="checkbox"' + (PR.pdfCode ? ' checked' : '') + ' onchange="PR.pdfCode=this.checked;prRows();prMatch()"> La primera palabra de cada línea es el código</label></div></div><div class="hint">Se leyeron ' + PR.pdf.length + ' líneas de texto. Ejemplo: <i>' + esc(PR.pdf.slice(0, 3).join(' | ').slice(0, 220)) + '</i></div></div>';
-  } else {
-    const head = PR.raw[PR.hdr] || []; const opts = sel => '<option value="-1">— No usar —</option>' + head.map((c, i) => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + colLetter(i) + ' · ' + esc(String(c).slice(0, 30) || '(vacía)') + '</option>').join('');
-    el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Revisá las columnas</div><div class="fgrid">' +
-      (PR.sheets && PR.sheets.SheetNames.length > 1 ? '<div class="fg"><label>Hoja</label><select onchange="PR.sheet=this.value;prSheet();prMapUI();prMatch()">' + PR.sheets.SheetNames.map(n => '<option' + (n === PR.sheet ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '') +
-      '<div class="fg"><label>Fila de títulos</label><input type="number" min="1" value="' + (PR.hdr + 1) + '" onchange="PR.hdr=Math.max(0,(parseInt(this.value,10)||1)-1);prCols();prMapUI();prMatch()"></div><div class="fg"><label>Columna del código</label><select onchange="PR.cc=+this.value;prRows();prMatch()">' + opts(PR.cc) + '</select></div><div class="fg"><label>Columna de la descripción</label><select onchange="PR.dc=+this.value;prRows();prMatch()">' + opts(PR.dc) + '</select></div><div class="fg"><label>Columna del precio *</label><select onchange="PR.pc=+this.value;prRows();prMatch()">' + opts(PR.pc) + '</select></div></div></div>';
-  }
+  const el = $('#l-map'); if (!el || !PR.raw) return;
+  const nc = prNCols(); const cols = Array.from({ length: nc }, (_, i) => i);
+  const muestra = j => { const h = PR.hdr >= 0 ? prCel((PR.raw[PR.hdr] || [])[j]) : ''; if (h) return h; for (let i = PR.hdr + 1; i < Math.min(PR.raw.length, PR.hdr + 40); i++) { const c = prCel((PR.raw[i] || [])[j]); if (c) return c; } return '(vacía)'; };
+  const opts = sel => '<option value="-1">— No usar —</option>' + cols.map(i => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + colLetter(i) + ' · ' + esc(muestra(i).slice(0, 30)) + '</option>').join('');
+  const rol = j => (j === PR.cc ? 'Código' : j === PR.dc ? 'Descripción' : j === PR.pc ? 'Precio' : '');
+  const color = j => (rol(j) ? 'background:#fff3e6;font-weight:700;color:#c2410c' : 'color:#888');
+  const ini = Math.max(PR.hdr, 0); const filas = PR.raw.slice(ini, ini + 8);
+  const tabla = '<div class="twrap" style="max-height:260px;overflow:auto;margin-top:10px"><table><thead><tr><th style="color:#888">#</th>' + cols.map(i => '<th style="' + color(i) + '">' + colLetter(i) + (rol(i) ? '<br><small>' + rol(i) + '</small>' : '') + '</th>').join('') + '</tr></thead><tbody>' +
+    filas.map((f, k) => '<tr' + (PR.hdr >= 0 && k === 0 ? ' style="background:#f3f0ec;font-weight:600"' : '') + '><td style="color:#888">' + (ini + k + 1) + '</td>' + cols.map(i => '<td' + (rol(i) ? ' style="background:#fffaf5"' : '') + '>' + esc(prCel((f || [])[i]).slice(0, 38)) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+  const esPdf = PR.fmt === 'pdf' && PR.lects;
+  el.innerHTML = '<div class="panel" style="margin-top:12px;background:#faf9f8"><div class="stit" style="font-weight:700">3. Elegí las columnas</div>' +
+    '<div class="hint" style="margin-bottom:8px">Mirá la tabla de abajo (así se leyó tu archivo) y marcá qué columna es el código, la descripción y el precio. Se recuerda para este proveedor.</div><div class="fgrid">' +
+    (esPdf && PR.lects.length > 1 ? '<div class="fg"><label>Cómo se leyó el PDF</label><select onchange="prLect(this.value)">' + PR.lects.map((l, i) => '<option value="' + i + '"' + (i === PR.lect ? ' selected' : '') + '>' + esc(l.nombre) + '</option>').join('') + '</select></div>' : '') +
+    (PR.sheets && PR.sheets.SheetNames.length > 1 ? '<div class="fg"><label>Hoja</label><select onchange="PR.sheet=this.value;prSheet();prMapUI();prMatch()">' + PR.sheets.SheetNames.map(n => '<option' + (n === PR.sheet ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '') +
+    '<div class="fg"><label>Fila de títulos <small>(0 = no hay)</small></label><input type="number" min="0" value="' + (PR.hdr + 1) + '" onchange="PR.hdr=Math.max(-1,(parseInt(this.value,10)||0)-1);prRows();prMemSet();prMapUI();prMatch()"></div>' +
+    '<div class="fg"><label>Columna del código</label><select onchange="prCambio(\'cc\',this.value)">' + opts(PR.cc) + '</select></div>' +
+    '<div class="fg"><label>Columna de la descripción</label><select onchange="prCambio(\'dc\',this.value)">' + opts(PR.dc) + '</select></div>' +
+    '<div class="fg"><label>Columna del precio *</label><select onchange="prCambio(\'pc\',this.value)">' + opts(PR.pc) + '</select></div></div>' +
+    '<div class="hint" style="margin-top:6px"><b>' + PR.rows.length + '</b> producto(s) con precio detectados con esta elección.</div>' + tabla + '</div>';
 }
 async function prMatch() {
   const box = $('#l-prev'); if (!box) return;
