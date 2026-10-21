@@ -1985,5 +1985,35 @@ function usrMiClave() {
   }).catch(e => toast(e.message, 'err'));
 }
 </script>
+<script>
+/* Aviso de demo + pedido de usuario propio por WhatsApp (se muestra solo cuando se está en una cuenta demo) */
+(function(){
+  var PRODUCTO = 'Mi Gestor Ferretería', WA = '5493515426971', cerrado = false;
+  try { cerrado = sessionStorage.getItem('demo_aviso_cerrado') === '1'; } catch(e){}
+  function esDemoAhora(){ try { return !!(esDemo()); } catch(e){ return false; } }
+  function mostrar(){
+    if (document.getElementById('demo-aviso')) return;
+    var d = document.createElement('div');
+    d.id = 'demo-aviso';
+    d.setAttribute('style','position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:#1e293b;color:#f8fafc;padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 -2px 10px rgba(0,0,0,.25)');
+    var t = document.createElement('span');
+    t.style.cssText = 'flex:1 1 280px;text-align:center';
+    t.textContent = '🧪 Estás en una demo: los datos que cargues no se guardan. Se borran en el reinicio diario y otras personas pueden estar usando la misma. ¿Querés probar con tus propios datos?';
+    var b = document.createElement('a');
+    b.textContent = '💬 Pedir usuario por WhatsApp';
+    b.target = '_blank'; b.rel = 'noopener';
+    b.href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent('Hola! Estuve probando la demo de ' + PRODUCTO + ' y quiero seguir probando con mi propio usuario. ¿Me pasás un usuario y contraseña?');
+    b.style.cssText = 'background:#25D366;color:#fff;text-decoration:none;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap';
+    var x = document.createElement('button');
+    x.type = 'button'; x.setAttribute('aria-label','Cerrar aviso'); x.textContent = '✕';
+    x.style.cssText = 'background:none;border:0;color:#cbd5e1;font-size:16px;cursor:pointer;padding:4px 6px';
+    x.onclick = function(){ cerrado = true; try { sessionStorage.setItem('demo_aviso_cerrado','1'); } catch(e){} quitar(); };
+    d.appendChild(t); d.appendChild(b); d.appendChild(x);
+    document.body.appendChild(d);
+  }
+  function quitar(){ var d = document.getElementById('demo-aviso'); if (d) d.remove(); }
+  setInterval(function(){ if (esDemoAhora() && !cerrado) mostrar(); else quitar(); }, 1000);
+})();
+</script>
 </body>
 </html>
