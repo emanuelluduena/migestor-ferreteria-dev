@@ -340,6 +340,68 @@ async function enterApp() {
   go('inicio');
 }
 function logout() { clearSes(); S.token = null; S.user = null; S.neg = null; location.href = location.pathname; }
+
+/* ===================== POPUP DE SALIDA (solo demo) ===================== */
+// Igual que en Mi Gestor: se muestra al tocar "Salir", al irse con el mouse hacia arriba
+// (como yendo a cerrar la pestaña) o tras 3 minutos sin actividad. Los avisos pasan por
+// la función alertas-soporte (Slack).
+const ALERTAS_URL = SB_URL + '/functions/v1/alertas-soporte';
+const WA_DEMO = '5493515426971';
+let _exitShown = false, _exitSent = null;
+function esDemo() { return !!(S.token && S.neg && S.neg.es_demo); }
+function avisarSoporte(tipo, msg) {
+  try {
+    fetch(ALERTAS_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+      body: JSON.stringify({ tipo: tipo, negocio_id: (S.neg && S.neg.id) || 'ferreteria-demo', negocio_nombre: (S.neg && S.neg.nombre) || 'Mi Gestor Ferretería (demo)', mensaje: msg })
+    }).catch(() => { });
+  } catch (e) { }
+}
+function exitOpen(force) {
+  if (!esDemo() || $('#exit-pop')) return;
+  // los disparadores pasivos (mouse / inactividad) saltan una sola vez y no interrumpen otro modal abierto;
+  // un clic explícito en "Salir" siempre abre el popup
+  if (!force && (_exitShown || $$('.moverlay').length)) return;
+  _exitShown = true; _exitSent = null;
+  const o = modal('<div style="text-align:center"><h2 style="margin:0 0 8px">👋 ¿Te vas ya?</h2>' +
+    '<p style="color:#64748b;margin:0 0 16px">¿Te quedaste con ganas de ver más? Hablemos y lo vemos con los datos de tu ferretería.</p>' +
+    '<button type="button" class="btn g" style="width:100%;justify-content:center;margin-bottom:16px" onclick="exitWhatsapp()">💬 Tengo una duda, hablemos</button>' +
+    '<div style="border-top:1px solid #e2e8f0;padding-top:14px;margin-bottom:10px"><div style="font-size:13px;color:#64748b;margin-bottom:8px">¿Qué te pareció la demo?</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center"><button type="button" class="btn l" id="exit-si" style="font-size:20px" onclick="exitFb(\'si\')">👍</button><button type="button" class="btn l" id="exit-no" style="font-size:20px" onclick="exitFb(\'no\')">👎</button></div>' +
+    '<div id="exit-no-box" style="display:none;margin-top:12px"><textarea id="exit-txt" rows="3" style="width:100%" placeholder="¿Qué no te gustó o qué te faltó? (opcional)"></textarea><button type="button" class="btn o sm" style="margin-top:8px" onclick="exitEnviar()">Enviar</button></div></div>' +
+    '<button type="button" class="btn l" style="width:100%;justify-content:center;font-size:13px;margin-bottom:8px" onclick="closeModal()">Seguir viendo la demo</button>' +
+    '<div style="font-size:12px;color:#94a3b8;cursor:pointer;text-decoration:underline" onclick="exitLogout()">Salir sin más</div></div>');
+  o.id = 'exit-pop';
+}
+function exitFb(v) {
+  _exitSent = v;
+  $('#exit-si').style.background = v === 'si' ? '#bbf7d0' : '';
+  $('#exit-no').style.background = v === 'no' ? '#bbf7d0' : '';
+  if (v === 'no') { $('#exit-no-box').style.display = 'block'; }
+  else { $('#exit-no-box').style.display = 'none'; avisarSoporte('ferreteria-demo-feedback-positivo', '👍 Le gustó la demo'); toast('¡Qué bueno! Gracias 🙌'); }
+}
+function exitEnviar() {
+  const t = (val('exit-txt') || '').trim();
+  avisarSoporte('ferreteria-demo-feedback-negativo', t || '(sin comentario)');
+  closeModal(); toast('Gracias, tu opinión nos ayuda a crecer 🙏');
+}
+function exitWhatsapp() {
+  let t = 'Hola! Estuve probando la demo de Mi Gestor Ferretería';
+  if (_exitSent === 'si') t += ' y me gustó 👍.'; else if (_exitSent === 'no') t += ', quería comentarles algo.'; else t += '.';
+  t += ' Tengo una duda.';
+  avisarSoporte('ferreteria-demo-interes', 'Tocó "Tengo una duda, hablemos" en el popup de salida');
+  window.open('https://wa.me/' + WA_DEMO + '?text=' + encodeURIComponent(t), '_blank', 'noopener');
+  closeModal();
+}
+function exitLogout() { closeModal(); logout(); }
+function salirClick() { if (esDemo()) exitOpen(true); else logout(); }
+(function () {
+  document.addEventListener('mouseout', e => { if (esDemo() && !e.relatedTarget && e.clientY <= 0) exitOpen(); });
+  let t = null;
+  const rst = () => { clearTimeout(t); t = setTimeout(() => exitOpen(), 3 * 60 * 1000); };
+  ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, rst, { passive: true }));
+  rst();
+})();
 async function demoLogin(n) {
   await loginFetch({ demo: true, n: parseInt(n, 10) || undefined });
   history.replaceState(null, '', location.pathname);
@@ -367,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { await demoLogin(); } catch (err) { showLogin(err.message); }
     finally { b.disabled = false; b.textContent = 'Probar una demo sin registrarme'; }
   });
-  $('#hout').addEventListener('click', logout);
+  $('#hout').addEventListener('click', salirClick);
   $('#hmenu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#nbk').addEventListener('click', () => $('#app').classList.remove('nav-open'));
   boot();
