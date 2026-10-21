@@ -410,7 +410,8 @@ async function demoLogin(n) {
 async function boot() {
   const p = new URLSearchParams(location.search);
   try {
-    if (p.has('demo')) { await demoLogin(p.get('demo')); return; }
+    // ?demo=1 entra directo a una ferretería demo AL AZAR (sin n: el servidor elige), igual que Mi Gestor
+    if (p.has('demo')) { await demoLogin(); return; }
     const s = loadSes();
     if (s) { S.token = s.token; S.user = s.user; S.neg = s.neg; await enterApp(); return; }
   } catch (e) { clearSes(); S.token = null; showLogin(e.message); return; }
